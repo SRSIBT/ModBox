@@ -1,0 +1,57 @@
+{
+  "activeGame": "黑神话：悟空",
+  "theme": "light",
+  "background": "【哲风壁纸】AI-AI生成.jpg",
+  "modColumns": [
+    {
+      "key": "status",
+      "label": "安装",
+      "width": 80
+    },
+    {
+      "key": "drag",
+      "label": "排序",
+      "width": 40
+    },
+    {
+      "key": "index",
+      "label": "序号",
+      "width": 77
+    },
+    {
+      "key": "cover",
+      "label": "封面",
+      "width": 107
+    },
+    {
+      "key": "name",
+      "label": "名称",
+      "width": 213
+    },
+    {
+      "key": "type",
+      "label": "类型",
+      "width": 95
+    },
+    {
+      "key": "modId",
+      "label": "模组 ID",
+      "width": 87
+    },
+    {
+      "key": "version",
+      "label": "版本",
+      "width": 87
+    },
+    {
+      "key": "author",
+      "label": "作者",
+      "width": 91
+    },
+    {
+      "key": "group",
+      "label": "分组",
+      "width": 76
+    }
+  ]
+}
