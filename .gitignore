@@ -25,5 +25,5 @@ dist-ssr/
 .vite/
 coverage/
 
-# 游戏仓库
-repo/
+# 运行时数据（settings/公告已读状态/壁纸/游戏 mod，含大文件）
+data/

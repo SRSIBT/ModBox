@@ -23,9 +23,10 @@ router.get('/dialog/folders', async (req, res) => {
 router.get('/dialog/file', async (req, res) => {
   const { type } = req.query
 
-  const filters = type === 'image'
-    ? [{ name: '图片', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif'] }]
-    : [{ name: '可执行文件', extensions: ['exe'] }]
+  const filters =
+    type === 'image'
+      ? [{ name: '图片', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif'] }]
+      : [{ name: '可执行文件', extensions: ['exe'] }]
 
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],

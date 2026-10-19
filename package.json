@@ -1,9 +1,9 @@
 {
   "name": "ModBox",
-  "version": "1.0.0",
-  "description": "An Electron application with Vue",
+  "version": "0.0.3",
+  "description": "ModBox —— 自制模组管理器，轻量、干净。把安装、启停、排序收进一个盒子，让模组管理不再折腾。",
   "main": "./out/main/index.js",
-  "author": "example.com",
+  "author": "SRSIBT",
   "homepage": "https://electron-vite.org",
   "scripts": {
     "format": "prettier --write .",
@@ -23,7 +23,9 @@
     "axios": "^1.20.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "gsap": "^3.15.0",
     "pinia": "^4.0.3",
+    "unzipper": "^0.12.5",
     "vue3-carousel": "^0.17.0",
     "vuedraggable": "^4.1.0"
   },

@@ -9,7 +9,7 @@ export const buildTree = (dir) => {
     return a.name.localeCompare(b.name)
   })
 
-  return items.map(f => {
+  return items.map((f) => {
     const full = path.join(dir, f.name)
     if (f.isDirectory()) {
       return { name: f.name, isDir: true, open: false, children: buildTree(full) }
