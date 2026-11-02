@@ -1,34 +1,38 @@
-# mod-manager
+# Mod 管理器
 
-An Electron application with Vue
+一个自己写的游戏模组管理器。因为受够了 N++ 太复杂、Mod 盒子乱丢文件，所以决定自己写一个。
 
-## Recommended IDE Setup
+## 这是什么
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
+基于 Electron + Vue 的桌面应用，用来管理游戏模组：扫描游戏目录、安装模组、卸载模组、排序、编辑模组信息。
 
-## Project Setup
+## 已完成
 
-### Install
+- 首页
+- 游戏管理：添加游戏、扫描游戏目录
+- 模组管理：
+  - 扫描模组
+  - 安装模组
+  - 卸载模组
+  - 排序
+  - 编辑模组信息（进行中）
+
+## 未完成 / 已知问题
+
+- 编辑模组信息功能还没写完
+- 模组封面显示有问题
+- 部分无关文件会被丢进游戏根目录（需要修）
+- 界面偶尔卡顿
+- 代码结构偏乱，功能加得太快，没有及时拆分
+
+## 技术栈
+
+- Electron
+- Vue 3
+- Vite
+
+## 开发
 
 ```bash
-$ npm install
-```
-
-### Development
-
-```bash
-$ npm run dev
-```
-
-### Build
-
-```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
-```
+npm install
+npm run dev
