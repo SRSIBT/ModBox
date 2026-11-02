@@ -4,15 +4,27 @@
       <div class="nt glass-card" @click.stop>
         <div class="nt-title">
           <div class="nt-title__logo">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
-              stroke-linejoin="round">
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <path d="M8 2a4 4 0 0 0-4 4v2.5L2.5 10.5h11L12 8.5V6a4 4 0 0 0-4-4z" />
               <path d="M6.5 12.5a1.5 1.5 0 0 0 3 0" />
             </svg>
           </div>
           <span>公告</span>
           <button class="nt-title__close" @click="close">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            >
               <line x1="4" y1="4" x2="12" y2="12" />
               <line x1="12" y1="4" x2="4" y2="12" />
             </svg>
@@ -27,22 +39,38 @@
 
           <div class="nt-content__box">
             <div class="left">
-              <div class="left-item" :class="{
-                'current-item': current.id === notice.id,
-                'item-hover': current.id !== notice.id
-              }" v-for="notice in notices" :key="notice.id" @click="currentId = notice.id">
+              <div
+                class="left-item"
+                :class="{
+                  'current-item': current.id === notice.id,
+                  'item-hover': current.id !== notice.id
+                }"
+                v-for="notice in notices"
+                :key="notice.id"
+                @click="currentId = notice.id"
+              >
                 <div class="item-header">
                   <span class="tag" :class="notice.tag === '置顶' ? 'tag-top' : 'tag-normal'">{{
                     notice.tag
-                    }}</span>
+                  }}</span>
                   <div class="time">
                     {{ formatTime(notice.time) }}
                   </div>
                 </div>
                 <div class="item-title">
-                  <svg v-if="!notice.read" viewBox="0 0 1024 1024" version="1.1" p-id="5747" width="16" height="16">
-                    <path d="M512.3 512.2m-127.8 0a127.8 127.8 0 1 0 255.6 0 127.8 127.8 0 1 0-255.6 0Z" fill="#EF2020"
-                      p-id="5748"></path>
+                  <svg
+                    v-if="!notice.read"
+                    viewBox="0 0 1024 1024"
+                    version="1.1"
+                    p-id="5747"
+                    width="16"
+                    height="16"
+                  >
+                    <path
+                      d="M512.3 512.2m-127.8 0a127.8 127.8 0 1 0 255.6 0 127.8 127.8 0 1 0-255.6 0Z"
+                      fill="#EF2020"
+                      p-id="5748"
+                    ></path>
                   </svg>
                   <span>{{ notice.title }}</span>
                 </div>
@@ -75,7 +103,7 @@
 
               <div class="right-close">
                 <a @click="markUnread(current.id)">标为未读</a>
-                <button @click="markRead(current.id)">知道啦</button>
+                <button @click="markRead(current)">知道啦</button>
               </div>
             </div>
           </div>
@@ -98,7 +126,7 @@ onMounted(() => {
   fetchNotices()
 })
 
-const props = defineProps({
+defineProps({
   visible: Boolean
 })
 
@@ -359,13 +387,13 @@ const close = () => {
   opacity: 0;
 }
 
-.notice-enter-active .notice,
-.notice-leave-active .notice {
+.notice-enter-active .nt,
+.notice-leave-active .nt {
   transition: transform 0.2s ease;
 }
 
-.notice-enter-from .notice,
-.notice-leave-to .notice {
+.notice-enter-from .nt,
+.notice-leave-to .nt {
   transform: scale(0.95);
 }
 </style>

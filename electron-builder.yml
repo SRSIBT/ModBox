@@ -1,8 +1,9 @@
 appId: com.electron.app
-productName: mod-manager
+productName: ModBox
 directories:
   buildResources: build
 files:
+  - '!data/**'
   - '!**/.vscode/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
@@ -10,13 +11,16 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
 asarUnpack:
   - resources/**
+extraResources:
+  - from: src/main/resources
+    to: .
 # 打包安装时由安装器写注册表，比运行时 setAsDefaultProtocolClient 更稳
 protocols:
   - name: Nexus Mods
     schemes:
       - nxm
 win:
-  executableName: mod-manager
+  executableName: ModBox
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

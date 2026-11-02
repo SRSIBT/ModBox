@@ -10,8 +10,14 @@
         <div class="dialog__content">
           <div class="field">
             <label>封面</label>
-            <div class="cover-upload" @click="handlePickCover" @dragover.prevent="isDragOver = true"
-              @dragleave="isDragOver = false" @drop.prevent="onCoverDrop">
+            <div
+              class="cover-upload"
+              :class="{ 'drag-over': isDragOver }"
+              @click="handlePickCover"
+              @dragover.prevent="isDragOver = true"
+              @dragleave="isDragOver = false"
+              @drop.prevent="onCoverDrop"
+            >
               <img :src="coverPreview || form.cover" v-if="coverPreview || form.cover" />
               <div v-else class="cover-empty">点击上传</div>
             </div>
@@ -34,7 +40,7 @@
 
           <div class="field">
             <label>分组</label>
-            <input v-model="form.group">
+            <input v-model="form.group" />
           </div>
 
           <div class="field">
@@ -121,47 +127,53 @@ const autoResize = (e) => {
 }
 
 // 打开时，把 mod 数据填进表单
-watch(() => props.visible, (val) => {
-  if (val && props.mod) {
-    Object.assign(form, {
-      id: props.mod.id,
-      name: props.mod.name || '',
-      path: props.mod.path || '',
-      type: props.mod.type || '',
-      modId: props.mod.modId || '',
-      group: props.mod.group || '',
-      version: props.mod.version || '',
-      author: props.mod.author || '',
-      cover: '',
-      describe: props.mod.describe || ''
-    })
+watch(
+  () => props.visible,
+  (val) => {
+    if (val && props.mod) {
+      Object.assign(form, {
+        id: props.mod.id,
+        name: props.mod.name || '',
+        path: props.mod.path || '',
+        type: props.mod.type || '',
+        modId: props.mod.modId || '',
+        group: props.mod.group || '',
+        version: props.mod.version || '',
+        author: props.mod.author || '',
+        cover: '',
+        describe: props.mod.describe || ''
+      })
+    }
+    coverPreview.value = props.mod.cover || ''
   }
-  coverPreview.value = props.mod.cover || ''
-}
 )
 
 // 自动调整 textarea 高度
-watch(() => props.visible, async (val) => {
-  if (val) {
-    await nextTick()
-    const el = descRef.value
-    if (el) {
-      el.style.height = 'auto'
-      el.style.height = el.scrollHeight + 'px'
+watch(
+  () => props.visible,
+  async (val) => {
+    if (val) {
+      await nextTick()
+      const el = descRef.value
+      if (el) {
+        el.style.height = 'auto'
+        el.style.height = el.scrollHeight + 'px'
+      }
     }
   }
-}
 )
 
-watch(() => form.type, (val) => {
-  if (!val) {
-    form.name = form.name.replace(/^【(.+?)】/, '')
-  } else if (/^【(.+?)】/.test(form.name)) {
-    form.name = form.name.replace(/^【(.+?)】/, `【${val}】`)
-  } else {
-    form.name = `【${val}】${form.name}`
+watch(
+  () => form.type,
+  (val) => {
+    if (!val) {
+      form.name = form.name.replace(/^【(.+?)】/, '')
+    } else if (/^【(.+?)】/.test(form.name)) {
+      form.name = form.name.replace(/^【(.+?)】/, `【${val}】`)
+    } else {
+      form.name = `【${val}】${form.name}`
+    }
   }
-}
 )
 
 const close = () => emit('update:visible', false)

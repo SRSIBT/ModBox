@@ -4,15 +4,18 @@ import { useSettingStore } from './setting'
 import axios from 'axios'
 
 export const useGameStore = defineStore('games', () => {
-
-  const games = ref([])                   // 游戏列表
-  const currentId = ref('')               // 当前选中游戏ID
-  const settingStore = useSettingStore()  // 设置store
+  const games = ref([]) // 游戏列表
+  const currentId = ref('') // 当前选中游戏ID
+  const settingStore = useSettingStore() // 设置store
 
   // 当前选中游戏，用当前选中游戏ID查找
-  const currentGame = computed(() => games.value.find((g) => g.id === currentId.value) || games.value[0])
+  const currentGame = computed(
+    () => games.value.find((g) => g.id === currentId.value) || games.value[0]
+  )
   // 激活游戏
-  const activeGame = computed(() => games.value.find((g) => g.id === settingStore.activeGameId) || null)
+  const activeGame = computed(
+    () => games.value.find((g) => g.id === settingStore.activeGameId) || null
+  )
 
   // 获取游戏列表
   const fetchGames = async () => {
@@ -23,27 +26,19 @@ export const useGameStore = defineStore('games', () => {
     }))
   }
 
-  // 修改游戏配置
+  // 修改游戏路径
   const updateGame = async (rootPath, exePath) => {
     const game = currentGame.value
-    if (game) {
-      game.rootPath = rootPath
-      game.exePath = exePath
-      await saveGame(game)
-    }
-  }
+    if (!game) return
 
-  // 保存游戏配置
-  const saveGame = async (game) => {
-    await axios.post('/api/game', game)
-  }
+    await axios.post('/api/game', {
+      id: game.id,
+      rootPath,
+      exePath
+    })
 
-  // 删除游戏配置
-  const deleteGame = async () => {
-    const id = currentGame.value?.id
-    if (!id) return
-    await axios.delete(`/api/game/${id}`)
-    await fetchGames()
+    game.rootPath = rootPath
+    game.exePath = exePath
   }
 
   // 手动获取游戏根目录
@@ -66,7 +61,6 @@ export const useGameStore = defineStore('games', () => {
 
     fetchGames,
     updateGame,
-    deleteGame,
     browseRoot,
     browseExe
   }

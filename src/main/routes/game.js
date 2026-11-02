@@ -3,139 +3,97 @@ import path from 'path'
 import express from 'express'
 import { shell } from 'electron'
 import { spawn } from 'child_process'
-import { REPO_DIR, SETTINGS_FILE } from '../utils/paths.js'
+import { getGame, getGames, saveGamePaths } from '../stores/game.js'
 
 const router = express.Router()
 
-const gameDir = (id) => path.join(REPO_DIR, id)                 // repo游戏仓库文件夹
-const gameFile = (id) => path.join(REPO_DIR, id, 'game.json')   // game.json游戏配置文件
-
-// 读取 game.json 游戏配置文件
-const readGame = (id) => {
-  if (!isValidGameId(id) || !fs.existsSync(gameFile(id))) return null
-
-  try {
-    return JSON.parse(fs.readFileSync(gameFile(id), 'utf-8'))
-  } catch (e) {
-    console.warn(`[game.js] ${id}/game.json 解析失败：${e.message}`)
-    return null
-  }
-}
-
-// 验证游戏ID
-const isValidGameId = (id) => {
-  if (typeof id !== 'string') return false
-  if (!id || id !== id.trim()) return false
-  if (id === '.' || id === '..') return false
-  if (/[\\/]/.test(id)) return false
-  if (/[<>:"|?*\x00-\x1f]/.test(id)) return false
-  if (/[. ]$/.test(id)) return false
-  return path.basename(id) === id
-}
-
-// 获取游戏配置
+// 获取游戏列表：
+// BUILTIN_GAMES 打底，再由 settings.json 的 gamePaths 合并用户真实路径。
 router.get('/games', (req, res) => {
-  if (!fs.existsSync(REPO_DIR)) return res.json({ games: [] })
-
-  const games = fs.readdirSync(REPO_DIR, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => {
-      const id = d.name
-      const game = readGame(id)
-
-      // 没有 game.json / 解析失败，回退成最小视图
-      if (!game) {
-        return {
-          id,
-          name: id,
-          rootPath: '',
-          exePath: '',
-          cover: `/covers/${id}/cover.jpg`
-        }
-      }
-
-      // game 存在，去掉 mods，其余返回
-      const { mods, ...rest } = game
-      return {
-        ...rest,
-        id: d.name,
-        cover: `/covers/${id}/cover.jpg`
-      }
-    })
-
-  res.json({ games })
+  res.json({ games: getGames() })
 })
 
-// 更新游戏配置
+// 保存游戏路径：只写 settings.json 的 gamePaths，不碰 mods.json
 router.post('/game', (req, res) => {
-  const { cover, id, ...gameData } = req.body
-  if (!isValidGameId(id)) {
-    return res.status(400).json({ success: false, error: '无效的游戏 id' })
-  }
+  const { id, rootPath, exePath } = req.body || {}
+  const paths = {}
+  if (typeof rootPath === 'string') paths.rootPath = rootPath
+  if (typeof exePath === 'string') paths.exePath = exePath
 
-  const isFile = !fs.existsSync(gameFile(id))
-  if (!fs.existsSync(gameDir(id))) fs.mkdirSync(gameDir(id), { recursive: true })
-  if (isFile) gameData.id = id
-  fs.writeFileSync(gameFile(id), JSON.stringify(gameData, null, 2))
+  const saved = saveGamePaths(id, paths)
+  if (!saved) return res.status(404).json({ success: false, error: '游戏不存在' })
 
-  res.json({ success: true })
-})
-
-// 删除游戏配置
-router.delete('/game/:id', async (req, res) => {
-  const id = req.params.id
-  // id 会被当成目录名丢进回收站，必须先校验，否则 '../x' 能删到工作区外
-  if (!isValidGameId(id)) return res.status(400).json({ success: false, error: '无效的游戏 id' })
-
-  const dir = gameDir(id)
-  if (fs.existsSync(dir)) {
-    await shell.trashItem(dir)
-  }
-
-  // 删掉的正好是激活中的游戏，就清空 activeGameId
-  if (!fs.existsSync(SETTINGS_FILE)) return
-  try {
-    const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'))
-    if (settings.activeGameId !== id) return
-    settings.activeGameId = ''
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2))
-  } catch (e) {
-    console.warn(`[game.js] settings.json 解析失败，未清理 activeGameId：${e.message}`)
-  }
-
-  res.json({ success: true })
+  res.json({ success: true, rootPath: saved.rootPath || '', exePath: saved.exePath || '' })
 })
 
 // 打开游戏根目录
-router.post('/game/open-folder', (req, res) => {
-  const { gameId } = req.body
-  const game = readGame(gameId)
-  if (!game) return res.json({ success: false })
+router.post('/game/open-folder', async (req, res) => {
+  const { gameId } = req.body || {}
+  const game = getGame(gameId)
 
-  if (game.rootPath && fs.existsSync(game.rootPath)) {
-    shell.openPath(game.rootPath)
+  if (!game) return res.status(404).json({ success: false, error: '游戏不存在' })
+  if (!game.rootPath) {
+    return res.json({ success: false, error: '尚未设置游戏根目录' })
   }
-  res.json({ success: true })
+  if (!fs.existsSync(game.rootPath)) {
+    return res.json({ success: false, error: `游戏根目录不存在：${game.rootPath}` })
+  }
+
+  try {
+    const error = await shell.openPath(game.rootPath)
+    if (error) return res.json({ success: false, error })
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message })
+  }
 })
 
-// 启动游戏
-router.post('/game/launch', (req, res) => {
-  const { gameId } = req.body
-  const game = readGame(gameId)
-  if (!game) return res.json({ success: false })
+// 启动游戏：优先 Steam；Steam 启动失败时用用户配置的 exe 兜底
+router.post('/game/launch', async (req, res) => {
+  const { gameId } = req.body || {}
+  const game = getGame(gameId)
+
+  if (!game) return res.status(404).json({ success: false, error: '游戏不存在' })
+
+  let steamError = ''
 
   if (game.steamAppId) {
-    shell.openExternal(`steam://rungameid/${game.steamAppId}`)
-    return res.json({ success: true })
+    try {
+      await shell.openExternal(`steam://rungameid/${game.steamAppId}`)
+      return res.json({ success: true, via: 'steam' })
+    } catch (e) {
+      steamError = e.message
+      console.warn('[game.js] Steam 启动失败，尝试 exe 兜底：', e.message)
+    }
   }
 
-  // 没有 steamAppId，用 exePath
   if (game.exePath && fs.existsSync(game.exePath)) {
-    spawn(game.exePath, [], { detached: true, stdio: 'ignore' }).unref()
-    return res.json({ success: true })
+    try {
+      const child = spawn(game.exePath, [], {
+        cwd: path.dirname(game.exePath),
+        detached: true,
+        stdio: 'ignore'
+      })
+      await new Promise((resolve, reject) => {
+        child.once('spawn', resolve)
+        child.once('error', reject)
+      })
+      child.unref()
+      return res.json({ success: true, via: 'exe' })
+    } catch (e) {
+      return res.status(500).json({
+        success: false,
+        error: `exe 启动失败：${e.message}` + (steamError ? `；Steam 错误：${steamError}` : '')
+      })
+    }
   }
 
-  res.json({ success: false })
+  res.json({
+    success: false,
+    error: steamError
+      ? `Steam 启动失败：${steamError}；也没有可用的 exePath`
+      : '没有可用的 Steam App ID 或 exePath'
+  })
 })
 
 export default router

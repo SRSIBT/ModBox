@@ -1,42 +1,46 @@
 import express from 'express'
-import fs from 'fs'
-import { NOTICES_FILE } from '../utils/paths.js'
+import { NOTICES } from '../config/notices.js'
+import { readJson, writeJson } from '../stores/file.js'
+import { NOTICE_STATE_FILE } from '../stores/paths.js'
 
 const router = express.Router()
 
-// 获取公告
-router.get('/notices', (req, res) => {
-  res.json({ notices: readNotices() })
-})
-
-// 保存已读状态
-router.post('/notices', (req, res) => {
-  const incoming = Array.isArray(req.body) ? req.body : []
-
-  const merged = readNotices().map((notice) => {
-    const patch = incoming.find((n) => n.id === notice.id)
-    if (!patch) return notice
-    return {
-      ...notice,
-      read: !!patch.read,
-      readAt: patch.readAt || null
-    }
-  })
-
-  fs.writeFileSync(NOTICES_FILE, JSON.stringify(merged, null, 2))
-  res.json({ success: true })
-})
-
-// 读取公告；文件缺失或损坏时返回空列表，不让接口崩
-const readNotices = () => {
-  if (!fs.existsSync(NOTICES_FILE)) return []
+const readStates = () => {
   try {
-    const data = JSON.parse(fs.readFileSync(NOTICES_FILE, 'utf-8'))
+    const data = readJson(NOTICE_STATE_FILE, [])
     return Array.isArray(data) ? data : []
   } catch (e) {
-    console.warn(`[notices] notices.json 解析失败，按空列表处理：${e.message}`)
+    console.warn(`[notice] 已读状态读取失败：${e.message}`)
     return []
   }
 }
+
+router.get('/notices', (req, res) => {
+  const states = new Map(readStates().map((item) => [Number(item.id), item]))
+  res.json({
+    notices: NOTICES.map((notice) => {
+      const state = states.get(notice.id)
+      return { ...notice, read: state?.read === true, readAt: state?.readAt || null }
+    })
+  })
+})
+
+router.post('/notices', (req, res) => {
+  const incoming = Array.isArray(req.body) ? req.body : []
+  const known = new Set(NOTICES.map((notice) => notice.id))
+  const states = new Map(readStates().map((item) => [Number(item.id), item]))
+
+  for (const item of incoming) {
+    const id = Number(item?.id)
+    if (!known.has(id)) continue
+    states.set(id, { id, read: item?.read === true, readAt: item?.readAt || null })
+  }
+
+  writeJson(
+    NOTICE_STATE_FILE,
+    [...states.values()].sort((a, b) => a.id - b.id)
+  )
+  res.json({ success: true })
+})
 
 export default router

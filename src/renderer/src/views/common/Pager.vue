@@ -9,12 +9,7 @@
 
     <!-- 右侧：每页条数 + 页码 + 跳页 -->
     <div class="pager__ctrl">
-      <FilterSelect
-        :model-value="pageSize"
-        :options="sizeOptions"
-        placement="up"
-        @update:model-value="onSizeChange"
-      />
+      <FilterSelect :model-value="pageSize" :options="sizeOptions" placement="up" @update:model-value="onSizeChange" />
 
       <button class="pg" :disabled="disabled || page <= 1" @click="go(page - 1)">‹</button>
 
@@ -29,7 +24,8 @@
 
       <label class="pager__jump">
         <span>前往</span>
-        <input v-model="jump" type="text" inputmode="numeric" @keyup.enter="doJump" />
+        <input v-model="jump" type="text" inputmode="numeric" :placeholder="String(page)"
+          :title="`当前第 ${page} 页，输入页码后回车跳转`" @keyup.enter="doJump" />
         <span>页</span>
       </label>
     </div>

@@ -7,7 +7,7 @@
             <line x1="4" y1="4" x2="12" y2="12" />
             <line x1="12" y1="4" x2="4" y2="12" />
           </svg>
-          <span>确认删除</span>
+          <span>确认操作</span>
           <svg
             class="close"
             @click="cancel"
@@ -22,12 +22,9 @@
         </div>
 
         <div class="dialog__content">
-          <span v-if="type === 'mod'">确定要删除模组 "{{ title }}" 嘛？</span>
+          <span v-if="message">{{ message }}</span>
+          <span v-else-if="type === 'mod'">确定要删除模组 "{{ title }}" 嘛？</span>
           <span v-else-if="type === 'mods'">确定要删除选中的 {{ title }} 个模组嘛？</span>
-          <span v-else>确定要删除 "{{ title }}" 嘛？</span>
-          <span v-if="type !== 'mod' && type !== 'mods'"
-            >此操作将永久删除该游戏记录及其所有相关数据</span
-          >
           <div class="warning">
             <svg
               t="1791028643833"
@@ -45,9 +42,30 @@
                 p-id="5807"
               ></path>
             </svg>
-            <span>删除后无法恢复，请谨慎操作</span>
+            <span>操作后无法撤销，请谨慎确认</span>
           </div>
         </div>
+
+        <label
+          v-if="checkbox"
+          class="dialog__checkbox"
+          :class="{ 'dialog__checkbox--on': checked }"
+        >
+          <input v-model="checked" type="checkbox" />
+          <span class="dialog__check" aria-hidden="true">
+            <svg
+              viewBox="0 0 12 12"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m2.5 6.2 2.2 2.2 4.8-5" />
+            </svg>
+          </span>
+          <span class="dialog__check-label">{{ checkboxLabel }}</span>
+        </label>
 
         <div class="dialog__buttons">
           <button class="btn-cancel" @click="cancel">取消</button>
@@ -59,7 +77,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { ref, watch } from 'vue'
+
+const props = defineProps({
   visible: Boolean,
   title: {
     type: [String, Number],
@@ -68,13 +88,31 @@ defineProps({
   type: {
     type: String,
     default: ''
+  },
+  message: {
+    type: String,
+    default: ''
+  },
+  checkbox: Boolean,
+  checkboxLabel: {
+    type: String,
+    default: '同时删除文件'
   }
 })
 
 const emit = defineEmits(['confirm', 'cancel'])
+const checked = ref(false)
+
+// 每次重新打开都回到默认状态，避免上次勾选残留
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) checked.value = false
+  }
+)
 
 const cancel = () => emit('cancel')
-const confirm = () => emit('confirm')
+const confirm = () => emit('confirm', { checked: checked.value })
 </script>
 
 <style scoped>
@@ -188,6 +226,84 @@ const confirm = () => emit('confirm')
   color: #f79400;
 }
 
+.dialog__checkbox {
+  margin: 8px 16px 0;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--inner-border);
+  border-radius: 9px;
+  background: var(--inner-bg);
+  color: var(--text-sub);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.dialog__checkbox:hover {
+  background: var(--bg-hover);
+  border-color: var(--panel-border);
+  color: var(--text);
+}
+
+.dialog__checkbox--on {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--inner-border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--inner-bg));
+}
+
+.dialog__checkbox input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dialog__check {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--inner-border);
+  border-radius: 5px;
+  background: var(--panel-bg);
+  color: transparent;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.dialog__check svg {
+  width: 11px;
+  height: 11px;
+}
+
+.dialog__checkbox--on .dialog__check {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.04);
+}
+
+.dialog__checkbox input:focus-visible + .dialog__check {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.dialog__check-label {
+  line-height: 1.4;
+}
+
 .dialog__buttons {
   padding: 12px 0;
   display: flex;
@@ -236,15 +352,5 @@ const confirm = () => emit('confirm')
 .dialog-enter-from,
 .dialog-leave-to {
   opacity: 0;
-}
-
-.dialog-enter-active .notice,
-.dialog-leave-active .notice {
-  transition: transform 0.2s ease;
-}
-
-.dialog-enter-from .notice,
-.dialog-leave-to .notice {
-  transform: scale(0.95);
 }
 </style>

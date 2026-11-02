@@ -2,16 +2,41 @@
   <div class="setting">
     <!-- 左侧定位栏 -->
     <aside class="setting__nav glass-inner">
-      <div v-for="(s, i) in sections" :key="s.key" class="nav-item" :class="{ 'nav-item--active': activeIndex === i }"
-        @click="scrollTo(i)">
-        {{ s.label }}
+      <div class="nav-item" :class="{ 'nav-item--active': activeIndex === 0 }" @click="scrollTo(0)">
+        <svg class="nav-icon" viewBox="0 0 24 24">
+          <path d="M4 7h7.5M18.5 7H20" />
+          <path d="M4 12h2.5M11.5 12H20" />
+          <path d="M4 17h7.5M18.5 17H20" />
+          <circle cx="15" cy="7" r="2.2" />
+          <circle cx="9" cy="12" r="2.2" />
+          <circle cx="15" cy="17" r="2.2" />
+        </svg>
+        <span class="nav-item__label">常规</span>
+      </div>
+
+      <div class="nav-item" :class="{ 'nav-item--active': activeIndex === 1 }" @click="scrollTo(1)">
+        <svg class="nav-icon" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="16" rx="2.5" />
+          <circle cx="8.6" cy="9.6" r="1.6" />
+          <path d="M4.4 17.6l4.6-4.8 3.4 3.4 2.5-2.1 4 4.1" />
+        </svg>
+        <span class="nav-item__label">外观</span>
+      </div>
+
+      <div class="nav-item" :class="{ 'nav-item--active': activeIndex === 2 }" @click="scrollTo(2)">
+        <svg class="nav-icon" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8.6" />
+          <path d="M12 11.3v5.1" />
+          <circle cx="12" cy="7.9" r="1.1" fill="currentColor" stroke="none" />
+        </svg>
+        <span class="nav-item__label">关于</span>
       </div>
     </aside>
 
     <!-- 右侧内容区 -->
     <div ref="scrollRef" class="setting__content" @scroll="onScroll">
       <!-- 常规 -->
-      <section :ref="setSection('general')" class="block glass">
+      <section :ref="setSection('general')" class="block glass-card">
         <div class="block__title">常规</div>
 
         <div class="row">
@@ -44,9 +69,45 @@
       </section>
 
       <!-- 外观 -->
-      <section :ref="setSection('appearance')" class="block glass">
+      <section :ref="setSection('appearance')" class="block glass-card">
         <div class="block__title">外观</div>
-        <div class="row__desc row__desc--top">背景图</div>
+
+        <div class="row">
+          <div class="row__label">
+            <div class="row__name">背景特效</div>
+            <div class="row__desc">叠加在壁纸上的全局动态效果</div>
+          </div>
+          <div class="segment">
+            <button class="segment__item" :class="{ 'segment__item--active': weather === 'none' }"
+              @click="setWeather('none')">
+              无
+            </button>
+            <button class="segment__item" :class="{ 'segment__item--active': weather === 'rain' }"
+              @click="setWeather('rain')">
+              下雨
+            </button>
+            <button class="segment__item" :class="{ 'segment__item--active': weather === 'snow' }"
+              @click="setWeather('snow')">
+              下雪
+            </button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row__label">
+            <div class="row__name">背景透明度</div>
+            <div class="row__desc">数值越大，壁纸越暗/越淡，内容更清楚</div>
+          </div>
+          <div class="opacity-control">
+            <input type="range" min="0" max="100" step="1" :value="backgroundOpacity"
+              :style="{ '--range-value': `${backgroundOpacity}%` }"
+              @input="setBackgroundOpacity($event.target.value, false)"
+              @change="setBackgroundOpacity($event.target.value)" />
+            <span>{{ backgroundOpacity }}%</span>
+          </div>
+        </div>
+
+        <div class="row__name row__desc--top">背景图</div>
 
         <div class="bg-list">
           <!-- 系统默认壁纸 -->
@@ -85,30 +146,8 @@
         </div>
       </section>
 
-      <!-- 游戏 & 数据 -->
-      <section :ref="setSection('game')" class="block glass">
-        <div class="block__title">游戏 &amp; 数据</div>
-
-        <div class="field">
-          <label>N 网 API 授权</label>
-          <div class="field__row">
-            <input v-model="nexusApiKey" :type="showKey ? 'text' : 'password'" placeholder="粘贴 Nexus Mods API Key"
-              spellcheck="false" @change="saveSettings" />
-            <button class="field__eye" :title="showKey ? '隐藏' : '显示'" @click="showKey = !showKey">
-              <svg viewBox="0 0 1024 1024" width="16" height="16">
-                <path v-if="showKey"
-                  d="M512 192c-196 0-364 118-448 288 84 170 252 288 448 288s364-118 448-288c-84-170-252-288-448-288z m0 480a192 192 0 1 1 0-384 192 192 0 0 1 0 384z m0-96a96 96 0 1 0 0-192 96 96 0 0 0 0 192z" />
-                <path v-else
-                  d="M128 512c84 170 252 288 448 288 84 0 162-22 229-60l-70-70a192 192 0 0 1-253-253l-70-70c-38 67-60 145-60 229zM512 224c-84 0-162 22-229 60l70 70a192 192 0 0 1 253 253l70 70c38-67 60-145 60-229-84-170-252-288-448-288z" />
-              </svg>
-            </button>
-          </div>
-          <div class="field__hint">仅本地保存，用于后续接入 Nexus Mods 接口</div>
-        </div>
-      </section>
-
       <!-- 关于 -->
-      <section :ref="setSection('about')" class="block glass">
+      <section :ref="setSection('about')" class="block glass-card">
         <div class="block__title">关于</div>
         <div class="about">
           <div class="about__row">
@@ -139,26 +178,38 @@ import { storeToRefs } from 'pinia'
 import axios from 'axios'
 import { useSettingStore } from '@/stores/setting'
 
-const sections = [
-  { key: 'general', label: '常规' },
-  { key: 'appearance', label: '外观' },
-  { key: 'game', label: '游戏 & 数据' },
-  { key: 'about', label: '关于' }
-]
-
 const settingStore = useSettingStore()
-const { theme, background, hasCustom, minimizeToTray, nexusApiKey, defaultBgUrl, customBgUrl } = storeToRefs(settingStore)
-const { setBackground, uploadBackground, removeBackground, saveSettings } = settingStore
+const {
+  theme,
+  background,
+  backgroundOpacity,
+  weather,
+  hasCustom,
+  minimizeToTray,
+  defaultBgUrl,
+  customBgUrl
+} = storeToRefs(settingStore)
+const {
+  setBackground,
+  setBackgroundOpacity,
+  setWeather,
+  uploadBackground,
+  removeBackground,
+  saveSettings
+} = settingStore
 
 const scrollRef = ref(null)
-const showKey = ref(false)
 const appInfo = ref({ name: '', version: '', author: '', description: '' })
 const activeIndex = ref(0)
+
 // 程序滚动期间暂停滚动监听，否则点「关于」时左侧会先闪回中间项
 const syncing = ref(false)
 // 程序滚动时想去的目标项：滚动期间锁住它，避免 observer 把高亮拽回中间
 let targetIndex = -1
 let syncTimer = null
+
+// 和模板里的 setSection 一一对应；scrollTo / observer 都按这个顺序取索引
+const sections = [{ key: 'general' }, { key: 'appearance' }, { key: 'about' }]
 
 // 收集各 section 的 DOM，offsetTop 用来算滚动目标
 const sectionEls = new Map()
@@ -269,18 +320,26 @@ const onRemoveBackground = async () => {
 
 /* 左侧定位栏 */
 .setting__nav {
-  width: 150px;
+  width: 70px;
   flex-shrink: 0;
   padding: 8px;
-  height: 100%;
+  max-height: max-content;
   box-sizing: border-box;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .nav-item {
-  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  padding: 6px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-sub);
   cursor: pointer;
   transition:
@@ -288,13 +347,36 @@ const onRemoveBackground = async () => {
     color 0.2s ease;
 }
 
+/* 图标默认走描边，靠 currentColor 自动跟随亮/暗主题和选中态 */
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s ease;
+}
+
+.nav-item:hover .nav-icon {
+  transform: scale(1.08);
+}
+
+.nav-item__label {
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
 .nav-item:hover {
+  color: var(--text);
   background: var(--bg-hover);
 }
 
 .nav-item--active {
   background: var(--bg-hover);
-  color: var(--accent);
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -385,6 +467,45 @@ const onRemoveBackground = async () => {
 
 .switch--on .switch__dot {
   transform: translateX(16px);
+}
+
+/* 背景遮罩滑杆 */
+.opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 240px;
+  flex-shrink: 0;
+}
+
+.opacity-control input[type='range'] {
+  flex: 1;
+  height: 4px;
+  appearance: none;
+  border-radius: 99px;
+  outline: none;
+  background: linear-gradient(to right,
+      var(--accent) 0 var(--range-value),
+      var(--inner-border) var(--range-value) 100%);
+  cursor: pointer;
+}
+
+.opacity-control input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--panel-bg);
+  background: var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.opacity-control span {
+  width: 36px;
+  text-align: right;
+  color: var(--text-sub);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 分段控件（亮/暗） */
@@ -517,68 +638,6 @@ const onRemoveBackground = async () => {
 
 .tip {
   display: inline-flex;
-}
-
-/* N 网 API */
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field label {
-  font-size: 13px;
-}
-
-.field__row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.field__row input {
-  flex: 1;
-  min-width: 0;
-  padding: 7px 10px;
-  font-size: 12px;
-  font-family: inherit;
-  color: var(--text);
-  background: var(--inner-bg);
-  border: 1px solid var(--inner-border);
-  border-radius: 8px;
-  outline: none;
-}
-
-.field__row input:focus {
-  border-color: var(--accent);
-}
-
-.field__eye {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-sub);
-  background: var(--inner-bg);
-  border: 1px solid var(--inner-border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.field__eye:hover {
-  background: var(--bg-hover);
-}
-
-.field__eye svg {
-  fill: currentColor;
-}
-
-.field__hint {
-  font-size: 11px;
-  color: var(--text-faint);
 }
 
 /* 关于 */

@@ -1,366 +1,865 @@
 <template>
-  <div class="dl">
-    <!-- ① 标题栏：模组获取 + 当前激活游戏 -->
-    <div class="dl__title glass-card">
-      <span class="dl__title-text">模组获取</span>
-
-      <div v-if="activeGame" class="game">
-        <img v-if="!gameCoverError" class="game__cover" :src="activeGame.cover" :alt="activeGame.name"
-          @error="gameCoverError = true" />
-        <div v-else class="game__cover game__cover--ph">{{ activeGame.name?.[0] || '?' }}</div>
-
-        <div class="game__info">
-          <span class="game__name">{{ activeGame.name }}</span>
-          <span class="game__domain">{{ nexusDomain }}</span>
-        </div>
+  <div class="web">
+    <!-- Edge 风格工具栏：导航按钮 + 地址栏 + 翻译 / 外部打开 -->
+    <header class="web__chrome">
+      <div class="web__nav">
+        <button class="chrome-btn" :disabled="!canGoBack" title="后退" @click="goBack">
+          <svg viewBox="0 0 24 24">
+            <path d="m14 6-6 6 6 6" />
+          </svg>
+        </button>
+        <button class="chrome-btn" :disabled="!canGoForward" title="前进" @click="goForward">
+          <svg viewBox="0 0 24 24">
+            <path d="m10 6 6 6-6 6" />
+          </svg>
+        </button>
+        <button
+          class="chrome-btn"
+          :class="{ 'chrome-btn--spin': loading }"
+          title="刷新"
+          @click="reload"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M20 11a8 8 0 1 0-2.34 5.66" />
+            <path d="M20 4v7h-7" />
+          </svg>
+        </button>
+        <button class="chrome-btn" :disabled="!activeGameId" title="回到模组首页" @click="goHome">
+          <svg viewBox="0 0 24 24">
+            <path d="m3 11 9-8 9 8" />
+            <path d="M5 10v10h14V10" />
+            <path d="M10 20v-6h4v6" />
+          </svg>
+        </button>
       </div>
 
-      <div v-else class="game">
-        <div class="game__cover game__cover--ph">?</div>
-        <div class="game__info">
-          <span class="game__name">未选择游戏</span>
-          <span class="game__domain">请先在游戏管理中选择一个游戏</span>
-        </div>
+      <div class="web__addr" :title="pageTitle ? `${pageTitle} — ${displayUrl}` : displayUrl">
+        <svg class="web__lock" viewBox="0 0 16 16">
+          <rect x="3.2" y="7" width="9.6" height="6.4" rx="1.6" />
+          <path d="M5.4 7V5.3a2.6 2.6 0 0 1 5.2 0V7" />
+        </svg>
+
+        <input
+          class="web__url"
+          :value="displayUrl"
+          readonly
+          spellcheck="false"
+          autocomplete="off"
+          aria-label="当前网址（只读）"
+          @focus="$event.target.select()"
+        />
+
+        <span v-if="isNexus" class="web__site">N 网</span>
+
+        <button
+          class="web__copy"
+          type="button"
+          :title="copied ? '已复制' : '复制链接'"
+          @click="copyUrl"
+        >
+          <svg v-if="!copied" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="11" height="11" rx="2" />
+            <path d="M5 15V5a2 2 0 0 1 2-2h8" />
+          </svg>
+          <svg v-else viewBox="0 0 24 24">
+            <path d="m5 12 4.5 4.5L19 7" />
+          </svg>
+        </button>
       </div>
+
+      <div class="web__actions">
+        <button
+          class="chrome-btn"
+          :disabled="clearingSession"
+          title="清除 N 网会话（反复人机验证时用）"
+          @click="clearNexusSession"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3 4.5 6v5.5c0 4.5 3.2 8 7.5 9.5 4.3-1.5 7.5-5 7.5-9.5V6L12 3z" />
+            <path d="M12 8v4.5" />
+            <path d="M12 15.5v.01" />
+          </svg>
+        </button>
+
+        <button
+          class="web__translate"
+          :class="{ 'web__translate--on': translateOn, 'web__translate--busy': translateBusy }"
+          :disabled="!canTranslate || translateBusy"
+          :title="translateTitle"
+          @click="toggleTranslate"
+        >
+          <span v-if="translateOn || translateBusy" class="web__pulse"></span>
+          <svg viewBox="0 0 24 24">
+            <path d="M4 5h10" />
+            <path d="M9 3v2" />
+            <path d="M6 5c0 4 3 7 7 8" />
+            <path d="M11 5c0 3-2 6-6 7" />
+            <path d="m13 20 4-10 4 10" />
+            <path d="M14.6 16h4.8" />
+          </svg>
+          <span class="web__translate-label">{{ translateLabel }}</span>
+        </button>
+
+        <button class="chrome-btn" title="在浏览器打开" @click="openInBrowser">
+          <svg viewBox="0 0 24 24">
+            <path d="M14 4h6v6" />
+            <path d="M20 4 11 13" />
+            <path d="M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="web__progress" :class="{ 'web__progress--on': loading }">
+      <span></span>
     </div>
 
-    <!-- ② 工具栏 -->
-    <ModToolbar :sort="sort" :mod-id-keyword="modIdKeyword" :name-keyword="nameKeyword" :favorite-count="favoriteCount"
-      :favorites-only="favoritesOnly" :disabled="!activeGameId" @update:sort="setSort"
-      @update:mod-id-keyword="setModIdKeyword" @update:name-keyword="setNameKeyword"
-      @toggle-favorites="toggleFavoritesOnly" @search="searchNow" @reset="resetFilter" />
+    <div class="web__body">
+      <div v-if="!activeGameId" class="web__empty">
+        <div class="web__empty-icon">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M3.5 9h17M3.5 15h17" />
+            <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18" />
+          </svg>
+        </div>
+        <p class="web__empty-title">尚未选择游戏</p>
+        <p class="web__empty-desc">先在「游戏管理」里选一个游戏，这里会直接打开它的 N 网模组页</p>
+      </div>
 
-    <!-- 错误提示（无 API Key / 限流 / 网络失败都走这里） -->
-    <div v-if="error" class="dl__error">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <webview
+        v-else
+        ref="viewRef"
+        class="web__view"
+        :src="startUrl"
+        :partition="PARTITION"
+        :preload="preloadUrl || null"
+        webpreferences="webSecurity=yes"
+        allowpopups
+        @did-navigate="onNavigate"
+        @did-navigate-in-page="onNavigate"
+        @page-title-updated="onTitle"
+        @did-start-loading="onStartLoading"
+        @did-stop-loading="onStopLoading"
+        @did-fail-load="onFail"
+        @ipc-message="onGuestMessage"
+      ></webview>
+    </div>
+
+    <footer v-if="loadError" class="web__error">
+      <svg viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="9" />
         <path d="M12 8v5" />
         <path d="M12 16.5v.01" />
       </svg>
-      <span>{{ error }}</span>
-      <button @click="refresh()">重试</button>
-    </div>
-
-    <!-- ③ 模组卡片 -->
-    <div class="dl__body">
-      <div v-if="list.length" class="dl__grid">
-        <ModCard v-for="mod in list" :key="mod.modId" :mod="mod" :favorite="favoriteSet.has(mod.modId)" :now="now"
-          @toggle-favorite="toggleFavorite" @open="openMod" />
-      </div>
-
-      <!-- 首次加载：骨架屏，避免高度塌陷 -->
-      <div v-else-if="loading" class="dl__grid">
-        <div v-for="i in 8" :key="i" class="sk">
-          <div class="sk__cover"></div>
-          <div class="sk__line" style="width: 70%"></div>
-          <div class="sk__line" style="width: 45%"></div>
-          <div class="sk__line" style="width: 88%"></div>
-          <div class="sk__line" style="width: 60%"></div>
-        </div>
-      </div>
-
-      <!-- 空状态 -->
-      <div v-else class="dl__empty">
-        <template v-if="!activeGameId">
-          <p class="dl__empty-title">尚未选择游戏</p>
-          <p class="dl__empty-desc">先在「游戏管理」里选择一个游戏，再回来获取模组</p>
-        </template>
-        <template v-else-if="favoritesOnly">
-          <p class="dl__empty-title">本页没有收藏的模组</p>
-          <p class="dl__empty-desc">继续翻页找找，或者先关掉「只看收藏」</p>
-        </template>
-        <template v-else>
-          <p class="dl__empty-title">没有找到符合条件的模组</p>
-          <p class="dl__empty-desc">换个关键词，或者重置筛选条件试试</p>
-          <button class="dl__empty-btn" @click="resetFilter">重置筛选条件</button>
-        </template>
-      </div>
-    </div>
-
-    <!-- ④ 翻页栏 -->
-    <Pager :total="total" :page="page" :page-size="pageSize" :disabled="loading" @update:page="setPage"
-      @update:page-size="setPageSize" />
+      <span>{{ loadError }}</span>
+    </footer>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useNexusStore } from '@/stores/nexus'
 import { useGameStore } from '@/stores/game'
 import { useSettingStore } from '@/stores/setting'
 
-import ModToolbar from './ModToolbar.vue'
-import ModCard from './ModCard.vue'
-import Pager from '../common/Pager.vue'
+defineOptions({ name: 'ModDownload' })
 
-const nexusStore = useNexusStore()
-const {
-  activeGameId,
-  sort,
-  modIdKeyword,
-  nameKeyword,
-  favoritesOnly,
-  page,
-  pageSize,
-  list,
-  total,
-  loading,
-  error,
-  favoriteCount,
-  favoriteSet,
-  now
-} = storeToRefs(nexusStore)
-
-const {
-  setSort,
-  setModIdKeyword,
-  setNameKeyword,
-  toggleFavoritesOnly,
-  setPage,
-  setPageSize,
-  resetFilter,
-  toggleFavorite,
-  searchNow,
-  refresh,
-  startTick,
-  stopTick
-} = nexusStore
+// 必须和主进程 download/manager.js 里的 NEXUS_PARTITION 一致
+const PARTITION = 'persist:nexus'
 
 const gameStore = useGameStore()
 const { activeGame } = storeToRefs(gameStore)
 const { fetchGames } = gameStore
 
 const settingStore = useSettingStore()
+const { activeGameId } = storeToRefs(settingStore)
 const { fetchSettings } = settingStore
 
-const gameCoverError = ref(false)
+const viewRef = ref(null)
+// preload 路径在渲染层 preload 启动时已同步拿到；拿不到再异步兜底
+const preloadUrl = ref(window.webviewAPI?.preloadPath || '')
+const currentUrl = ref('')
+const pageTitle = ref('Nexus Mods')
+const canGoBack = ref(false)
+const canGoForward = ref(false)
+const loading = ref(false)
+const loadError = ref('')
+const copied = ref(false)
+const clearingSession = ref(false)
 
-// 展示用：game.json 里写了 nexusDomain 就用它，否则退回目录名小写
-const nexusDomain = computed(() => {
+const translateState = ref({
+  state: 'idle',
+  done: 0,
+  total: 0,
+  translated: false,
+  message: ''
+})
+
+// game.json 里写了 nexusDomain 就用它，否则退回目录名小写
+const domain = computed(() => {
   const game = activeGame.value
   if (!game) return ''
   return String(game.nexusDomain || game.id || '').toLowerCase()
 })
 
-const openMod = (mod) => {
-  if (!mod?.url) return
-  window.electronAPI.openExternal(mod.url)
-}
+const homeUrl = computed(() => (domain.value ? `https://www.nexusmods.com/${domain.value}/` : ''))
 
-onMounted(async () => {
-  // 顺序要紧：activeGameId 就绪后，列表与收藏才有正确的游戏上下文
-  await fetchSettings()
-  await fetchGames()
-  await refresh()
-  startTick()
+// 地址栏只读展示：优先当前页面，页面还没导航时先显示首页
+const displayUrl = computed(() => currentUrl.value || homeUrl.value)
+
+// ---------- 浏览记录 ----------
+// 切到别的页面再回来，组件会被重新创建、webview 也会重新加载，
+// 所以把「每个游戏最后停留的页面」存在 localStorage 里，回来时直接接着打开。
+const PAGE_KEY = 'modbox:nexus:last-page'
+
+// 故意不做成响应式：它在导航时被写入，如果参与计算会让 webview 的 src 变来变去
+const savedPages = (() => {
+  try {
+    return JSON.parse(localStorage.getItem(PAGE_KEY) || '{}') || {}
+  } catch {
+    return {}
+  }
+})()
+
+const startUrl = computed(() => {
+  const gameDomain = domain.value
+  if (!gameDomain) return ''
+
+  const saved = savedPages[activeGameId.value] || ''
+  // 只认「当前游戏自己的页面」，换过游戏不会串到别的游戏去
+  return saved.startsWith(`https://www.nexusmods.com/${gameDomain}/`) ? saved : homeUrl.value
 })
 
-onUnmounted(stopTick)
+const rememberPage = (url) => {
+  if (!url || !activeGameId.value) return
+  if (!/^https:\/\/www\.nexusmods\.com\//i.test(url)) return
+
+  savedPages[activeGameId.value] = url
+  try {
+    localStorage.setItem(PAGE_KEY, JSON.stringify(savedPages))
+  } catch {
+    /* 存不下就算了，不影响浏览 */
+  }
+}
+
+const isNexus = computed(() => /(^|\.)nexusmods\.com$/i.test(safeHost(displayUrl.value)))
+
+const canTranslate = computed(() => Boolean(displayUrl.value && preloadUrl.value))
+
+const translateOn = computed(() => translateState.value.translated === true)
+
+const translateBusy = computed(() => translateState.value.state === 'working')
+
+const translateLabel = computed(() => {
+  const snapshot = translateState.value
+  if (snapshot.state === 'working') {
+    return `翻译中 ${snapshot.done}/${snapshot.total || '…'}`
+  }
+  if (snapshot.translated) return '显示原文'
+  return '翻译'
+})
+
+const translateTitle = computed(() => {
+  const snapshot = translateState.value
+  if (snapshot.message) return snapshot.message
+  if (snapshot.state === 'working') return '正在翻译当前页面'
+  if (snapshot.translated) return '恢复页面原文'
+  return '把当前页面翻译成简体中文（Edge 翻译引擎）'
+})
+
+function safeHost(value) {
+  try {
+    return new URL(value).hostname
+  } catch {
+    return ''
+  }
+}
+
+const refreshNav = () => {
+  const view = viewRef.value
+  if (!view || typeof view.canGoBack !== 'function') return
+  canGoBack.value = view.canGoBack()
+  canGoForward.value = view.canGoForward()
+}
+
+const resetTranslate = () => {
+  translateState.value = {
+    state: 'idle',
+    done: 0,
+    total: 0,
+    translated: false,
+    message: ''
+  }
+}
+
+const goBack = () => viewRef.value?.goBack()
+const goForward = () => viewRef.value?.goForward()
+const reload = () => viewRef.value?.reload()
+const goHome = () => {
+  if (viewRef.value && homeUrl.value) viewRef.value.loadURL(homeUrl.value)
+}
+
+const onStartLoading = () => {
+  loading.value = true
+  loadError.value = ''
+}
+
+const onNavigate = (event) => {
+  currentUrl.value = event.url || currentUrl.value
+  rememberPage(currentUrl.value)
+  resetTranslate()
+  viewRef.value?.send?.('mayfly:translate', 'reset')
+  refreshNav()
+}
+
+const onTitle = (event) => {
+  pageTitle.value = event.title || pageTitle.value
+}
+
+const onStopLoading = () => {
+  loading.value = false
+  refreshNav()
+  // 每次页面加载完成自动翻译；preload 里还有一次防抖兜底
+  viewRef.value?.send?.('mayfly:translate', 'auto')
+}
+
+const onFail = (event) => {
+  loading.value = false
+  // -3 是 ABORTED（用户中途点了别的链接），不算错误
+  if (event.errorCode !== -3) loadError.value = event.errorDescription || '页面加载失败'
+}
+
+const onGuestMessage = (event) => {
+  if (event.channel !== 'mayfly:translate-state') return
+  const payload = event.args?.[0]
+  if (payload && typeof payload === 'object') {
+    translateState.value = { ...translateState.value, ...payload }
+  }
+}
+
+const toggleTranslate = () => {
+  viewRef.value?.send?.('mayfly:translate', 'toggle')
+}
+
+const openInBrowser = () => {
+  const url = currentUrl.value || homeUrl.value
+  if (url) window.electronAPI.openExternal(url)
+}
+
+// Cloudflare 的人机验证和 UA/IP 绑得很死；清掉这个分区再重来，
+// 比一直在验证页里刷新有效。会退出 N 网登录，所以先确认。
+const clearNexusSession = async () => {
+  if (clearingSession.value) return
+  const confirmed = window.confirm('会退出 N 网登录并清除验证缓存，然后重新加载页面。确定继续吗？')
+  if (!confirmed) return
+
+  clearingSession.value = true
+  try {
+    await window.webviewAPI?.clearNexusSession?.()
+    translateState.value = {
+      state: 'idle',
+      done: 0,
+      total: 0,
+      translated: false,
+      message: ''
+    }
+    loadError.value = ''
+    viewRef.value?.reload()
+  } catch (error) {
+    loadError.value = error?.message || '清除 N 网会话失败'
+  } finally {
+    clearingSession.value = false
+  }
+}
+
+const copyUrl = async () => {
+  const url = displayUrl.value
+  if (!url) return
+
+  try {
+    await navigator.clipboard.writeText(url)
+  } catch {
+    // clipboard 在部分 file:// 环境会被拒绝，退回 textarea
+    const textarea = document.createElement('textarea')
+    textarea.value = url
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    textarea.remove()
+  }
+
+  copied.value = true
+  setTimeout(() => {
+    copied.value = false
+  }, 1200)
+}
+
+// 换游戏后地址变了，标题和翻译状态都要重置
+watch(homeUrl, () => {
+  pageTitle.value = activeGame.value?.name || 'Nexus Mods'
+  currentUrl.value = homeUrl.value
+  loadError.value = ''
+  resetTranslate()
+})
+
+onMounted(async () => {
+  await fetchSettings()
+  await fetchGames()
+
+  // 正常情况下 preload 启动时已经同步拿到；这里只兜底 preload 注入失败的情况
+  if (!preloadUrl.value) {
+    try {
+      preloadUrl.value = (await window.webviewAPI?.preload()) || ''
+    } catch {
+      preloadUrl.value = ''
+    }
+  }
+
+  currentUrl.value = homeUrl.value
+})
+
+onBeforeUnmount(() => {
+  copied.value = false
+})
 </script>
 
 <style scoped>
-.dl {
+.web {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
   overflow: hidden;
+  margin: 8px 10px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  backdrop-filter: none;
+  box-shadow: 0 18px 44px -28px rgba(0, 0, 0, 0.55);
+  box-sizing: border-box;
 }
 
-/* ---------- ① 标题栏 ---------- */
-.dl__title {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 16px;
-}
+/* ================= Edge 风格工具栏 ================= */
 
-.dl__title-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.game {
+.web__chrome {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
+  height: 48px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--divider);
+  background: color-mix(in srgb, var(--panel-bg) 88%, transparent);
+  user-select: none;
 }
 
-.game__cover {
+.web__nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chrome-btn {
   width: 30px;
   height: 30px;
-  flex-shrink: 0;
-  border-radius: 6px;
-  object-fit: cover;
-  border: 1px solid var(--inner-border);
-}
-
-.game__cover--ph {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
   color: var(--text-sub);
-  background: var(--inner-bg);
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
 }
 
-.game__info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
+.chrome-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.game__name {
-  font-size: 13px;
-  font-weight: 500;
+.chrome-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--inner-border);
   color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.game__domain {
-  font-size: 10px;
-  color: var(--text-faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.chrome-btn:active:not(:disabled) {
+  transform: scale(0.94);
 }
 
-/* ---------- 错误条 ---------- */
-.dl__error {
-  flex-shrink: 0;
+.chrome-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.chrome-btn--spin svg {
+  animation: spin 0.9s linear infinite;
+}
+
+/* ---------- 地址栏 ---------- */
+
+.web__addr {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
-  font-size: 12px;
-  color: #dc2626;
-  border-radius: 10px;
-  border: 1px solid rgba(220, 38, 38, 0.35);
-  background: rgba(220, 38, 38, 0.12);
-}
-
-.dl__error svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-.dl__error button {
-  margin-left: auto;
-  padding: 4px 12px;
-  font-size: 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(220, 38, 38, 0.5);
-  background: transparent;
-  color: #dc2626;
-  cursor: pointer;
-}
-
-.dl__error button:hover {
-  background: rgba(220, 38, 38, 0.18);
-}
-
-/* ---------- ③ 卡片区 ---------- */
-.dl__body {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.dl__grid {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  /* 行高必须由卡片内容决定，否则会被容器高度反压成一条条细条 */
-  grid-auto-rows: max-content;
-  align-content: start;
-  gap: 12px;
-}
-
-/* 骨架屏 */
-.sk {
-  border-radius: 10px;
+  padding: 0 8px 0 10px;
   border: 1px solid var(--inner-border);
+  border-radius: 9px;
   background: var(--inner-bg);
-  overflow: hidden;
-  animation: sk 1.4s ease-in-out infinite;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
 }
 
-.sk__cover {
-  /* 与卡片封面一致：用 padding 撑 16:9，不用 aspect-ratio */
-  padding-top: 56.25%;
-  background: var(--bg-hover);
+.web__addr:focus-within {
+  border-color: var(--accent);
+  background: var(--panel-bg);
+  box-shadow: 0 0 0 3px var(--success-soft);
 }
 
-.sk__line {
-  height: 9px;
-  margin: 10px 10px 0;
-  border-radius: 4px;
-  background: var(--bg-hover);
+.web__lock {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: var(--success);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
 }
 
-.sk__line:last-child {
-  margin-bottom: 12px;
-}
-
-@keyframes sk {
-
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
-
-/* 空状态 */
-.dl__empty {
+.web__url {
   flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.1px;
+  cursor: default;
+  user-select: all;
+}
+
+.web__url::placeholder {
+  color: var(--text-faint);
+}
+
+.web__site {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.web__copy {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.web__copy svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.web__copy:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* ---------- 右侧动作 ---------- */
+
+.web__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.web__translate {
+  position: relative;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--inner-border);
+  border-radius: 8px;
+  background: var(--inner-bg);
+  color: var(--text-sub);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.web__translate svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.web__translate:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
+
+.web__translate:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.web__translate--on {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 40%, transparent);
+  background: var(--success-soft);
+}
+
+.web__translate--busy svg {
+  animation: spin 1.1s linear infinite;
+}
+
+.web__pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 0 var(--success);
+  animation: dot-pulse 1.8s ease-out infinite;
+}
+
+.web__translate-label {
+  white-space: nowrap;
+}
+
+/* ================= 进度条 ================= */
+
+.web__progress {
+  flex: 0 0 auto;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0;
+  background: transparent;
+  transition: opacity 0.2s ease;
+}
+
+.web__progress--on {
+  opacity: 1;
+}
+
+.web__progress span {
+  display: block;
+  width: 34%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--success), transparent);
+  animation: edge-loading 1.15s ease-in-out infinite;
+}
+
+/* ================= 网页容器 ================= */
+
+.web__body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #1b1d21;
+}
+
+.web__view {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  background: #1b1d21;
+}
+
+/* ================= 空态 ================= */
+
+.web__empty {
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--text-sub);
+  animation: fade-up 0.35s ease both;
 }
 
-.dl__empty-title {
+.web__empty-icon {
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  border: 1px solid var(--inner-border);
+  background: var(--inner-bg);
+  color: var(--text-faint);
+}
+
+.web__empty-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.web__empty-title {
   font-size: 14px;
   font-weight: 500;
   color: var(--text);
 }
 
-.dl__empty-desc {
+.web__empty-desc {
+  max-width: 320px;
   font-size: 12px;
+  line-height: 1.7;
+  text-align: center;
+  color: var(--text-sub);
 }
 
-.dl__empty-btn {
-  margin-top: 8px;
-  padding: 6px 16px;
-  font-size: 12px;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  background: var(--accent);
-  cursor: pointer;
-  transition: filter 0.2s ease;
+/* ================= 错误条 ================= */
+
+.web__error {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--divider);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 11px;
 }
 
-.dl__empty-btn:hover {
-  filter: brightness(1.1);
+.web__error svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* ================= 动画 ================= */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dot-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 55%, transparent);
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes edge-loading {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(330%);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .web__translate-label {
+    display: none;
+  }
+
+  .web__translate {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .web__pulse {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 5px;
+    height: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chrome-btn--spin svg,
+  .web__translate--busy svg,
+  .web__progress span,
+  .web__pulse {
+    animation: none;
+  }
 }
 </style>

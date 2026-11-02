@@ -1,6 +1,76 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'path'
-import { findNxmArg } from './parse.js'
+
+const POSITIVE_INT = /^\d+$/
+
+const toPositiveInt = (value) => {
+  if (typeof value !== 'string') return null
+  const text = value.trim()
+  if (!POSITIVE_INT.test(text)) return null
+  const n = Number(text)
+  return Number.isSafeInteger(n) && n > 0 ? n : null
+}
+
+export function parseNxmUrl(raw) {
+  if (typeof raw !== 'string') return null
+  const text = raw.trim()
+  if (!text || text.length > 8192) return null
+
+  let url
+  try {
+    url = new URL(text)
+  } catch {
+    return null
+  }
+  if (url.protocol.toLowerCase() !== 'nxm:') return null
+
+  const domain = String(url.hostname || '').toLowerCase()
+  if (!domain) return null
+
+  const segments = url.pathname.split('/').filter(Boolean)
+  const modsIndex = segments.findIndex((item) => item.toLowerCase() === 'mods')
+  if (modsIndex < 0 || modsIndex + 1 >= segments.length) return null
+
+  const modId = toPositiveInt(segments[modsIndex + 1])
+  if (!modId) return null
+
+  let fileId = null
+  if (segments[modsIndex + 2]?.toLowerCase() === 'files') {
+    fileId = toPositiveInt(segments[modsIndex + 3] || '')
+  }
+  if (!fileId) fileId = toPositiveInt(url.searchParams.get('file_id') || '')
+
+  const key = String(url.searchParams.get('key') || '').trim()
+  const expires = toPositiveInt(String(url.searchParams.get('expires') || ''))
+  const authorization =
+    key && key.length <= 2048 && expires
+      ? {
+          key,
+          expires,
+          userId: toPositiveInt(String(url.searchParams.get('user_id') || ''))
+        }
+      : null
+
+  return { domain, modId, fileId: fileId || null, authorization }
+}
+
+export const isAuthorizationExpired = (
+  authorization,
+  nowSeconds = Math.floor(Date.now() / 1000)
+) => {
+  if (!authorization?.expires) return true
+  return authorization.expires <= nowSeconds
+}
+
+export const findNxmArg = (argv) => {
+  if (!Array.isArray(argv)) return null
+  for (const arg of argv) {
+    if (typeof arg !== 'string') continue
+    const text = arg.trim().replace(/^"|"$/g, '')
+    if (/^nxm:\/\//i.test(text)) return text
+  }
+  return null
+}
 
 // nxm:// 协议接管。
 //
@@ -60,7 +130,6 @@ const registerClient = () => {
     } else {
       app.setAsDefaultProtocolClient(SCHEME)
     }
-    console.log(`[nxm] 已注册 ${SCHEME}:// 处理器（${process.defaultApp ? '开发态' : '打包态'}）`)
   } catch (e) {
     console.warn('[nxm] 协议注册失败：', e.message)
   }

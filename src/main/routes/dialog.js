@@ -11,12 +11,12 @@ router.get('/dialog/folder', async (req, res) => {
   res.json({ path: result.filePaths[0] || '' })
 })
 
-// 获取多个文件夹路径
+// 获取单个文件夹路径（内联拖拽区点击导入用）
 router.get('/dialog/folders', async (req, res) => {
   const result = await dialog.showOpenDialog({
-    properties: ['openDirectory', 'multiSelections']
+    properties: ['openDirectory']
   })
-  res.json({ paths: result.filePaths })
+  res.json({ paths: result.filePaths.slice(0, 1) })
 })
 
 // 获取 .exe/img 文件

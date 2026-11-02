@@ -1,22 +1,24 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import axios from 'axios'
 
+// 背景特效只有这三种，别的地方（App.vue 的 startWeather）也按这三个分支走
+const WEATHER_MODES = ['none', 'rain', 'snow']
+
 export const useSettingStore = defineStore('setting', () => {
-
-  const activeGameId = ref('')
-  const theme = ref('light')
-  const viewMode = ref('table')
-  const background = ref('default')
-  const minimizeToTray = ref(false)
-  const nexusApiKey = ref('')
-
-  // 背景 URL 由后端拼好，前端只管用
-  const defaultBgUrl = ref('')
-  const customBgUrl = ref('')
-  const hasCustom = ref(false)
-
+  const activeGameId = ref('') // 激活游戏ID
+  const theme = ref('dark') // 主题
+  const viewMode = ref('table') // 模组视图
+  const background = ref('default') // 背景
+  const backgroundOpacity = ref(50) // 背景遮罩透明度 0-100
+  const weather = ref('none') // 天气
+  const minimizeToTray = ref(false) // 关闭至系统托盘
+  const autoImport = ref(false) // 自动导入Mod
+  const defaultBgUrl = ref('') // 默认壁纸URL
+  const customBgUrl = ref('') // 用户壁纸URL
+  const hasCustom = ref(false) // 是否有用户壁纸
   const modColumns = ref([
+    // 模组列表表头
     { key: 'status', label: '安装', width: 80 },
     { key: 'drag', label: '排序', width: 40 },
     { key: 'index', label: '序号', width: 30 },
@@ -34,11 +36,14 @@ export const useSettingStore = defineStore('setting', () => {
     const res = await axios.get('/api/settings')
 
     activeGameId.value = res.data.activeGameId || ''
-    theme.value = res.data.theme || 'light'
+    theme.value = res.data.theme || 'dark'
     viewMode.value = res.data.viewMode || 'table'
     background.value = res.data.background === 'custom' ? 'custom' : 'default'
+    backgroundOpacity.value = Math.min(100, Math.max(0, Number(res.data.backgroundOpacity ?? 50)))
+    // 白名单兜底：配置文件被手改成别的值时不至于让特效逻辑走到未定义分支
+    weather.value = WEATHER_MODES.includes(res.data.weather) ? res.data.weather : 'none'
     minimizeToTray.value = res.data.minimizeToTray === true
-    nexusApiKey.value = res.data.nexusApiKey || ''
+    autoImport.value = res.data.autoImport === true
 
     const saved = res.data.modColumns || []
     saved.forEach((s) => {
@@ -46,7 +51,7 @@ export const useSettingStore = defineStore('setting', () => {
       if (col) col.width = s.width
     })
 
-    defaultBgUrl.value = res.data.defaultBgUrl || ''
+    defaultBgUrl.value = res.data.defaultBgUrl || '/builtin-bg/default.jpg'
     customBgUrl.value = res.data.customBgUrl || ''
     hasCustom.value = res.data.hasCustom === true
 
@@ -59,22 +64,40 @@ export const useSettingStore = defineStore('setting', () => {
     applyBackground()
   }
 
-  // 保存设置
-  const saveSettings = () => axios.post('/api/settings', {
-    activeGameId: activeGameId.value,
-    theme: theme.value,
-    viewMode: viewMode.value,
-    background: background.value,
-    minimizeToTray: minimizeToTray.value,
-    nexusApiKey: nexusApiKey.value,
-    modColumns: modColumns.value
-  })
+  // 保存设置。
+  // 后端会按字段合并，但这里传的偏好值会覆盖原值；新增设置项必须同步加在这里。
+  const saveSettings = () =>
+    axios.post('/api/settings', {
+      activeGameId: activeGameId.value,
+      theme: theme.value,
+      viewMode: viewMode.value,
+      background: background.value,
+      backgroundOpacity: backgroundOpacity.value,
+      weather: weather.value,
+      minimizeToTray: minimizeToTray.value,
+      autoImport: autoImport.value,
+      modColumns: modColumns.value
+    })
 
   // 切换背景
   const setBackground = async (mode) => {
     background.value = mode === 'custom' ? 'custom' : 'default'
     applyBackground()
     await saveSettings()
+  }
+
+  // 切换背景特效。
+  // 先改 state 再落盘：App.vue 的 watch(weather) 因此能立刻切换，不用等请求回来。
+  const setWeather = async (mode) => {
+    weather.value = WEATHER_MODES.includes(mode) ? mode : 'none'
+    await saveSettings()
+  }
+
+  // 背景遮罩透明度，拖动时实时预览，松手时落盘
+  const setBackgroundOpacity = async (value, persist = true) => {
+    backgroundOpacity.value = Math.min(100, Math.max(0, Number(value) || 0))
+    applyBackground()
+    if (persist) await saveSettings()
   }
 
   // 上传背景
@@ -102,15 +125,24 @@ export const useSettingStore = defineStore('setting', () => {
     const root = document.documentElement
     root.classList.toggle('bg--custom', background.value === 'custom')
     root.classList.toggle('bg--default', background.value !== 'custom')
-    root.style.setProperty('--bg-default-img', defaultBgUrl.value ? `url("${defaultBgUrl.value}")` : 'none')
-    root.style.setProperty('--bg-custom-img', customBgUrl.value ? `url("${customBgUrl.value}")` : 'none')
+    root.style.setProperty(
+      '--bg-default-img',
+      defaultBgUrl.value ? `url("${defaultBgUrl.value}")` : 'none'
+    )
+    root.style.setProperty(
+      '--bg-custom-img',
+      customBgUrl.value ? `url("${customBgUrl.value}")` : 'none'
+    )
+    root.style.setProperty('--bg-overlay-opacity', String(backgroundOpacity.value / 100))
   }
 
   // 表头拖拽
   const startResize = (i, e) => {
     const startX = e.clientX
     const startWidth = modColumns.value[i].width
-    const onResize = (ev) => { modColumns.value[i].width = Math.max(40, startWidth + ev.clientX - startX) }
+    const onResize = (ev) => {
+      modColumns.value[i].width = Math.max(40, startWidth + ev.clientX - startX)
+    }
     const stopResize = () => {
       document.removeEventListener('mousemove', onResize)
       document.removeEventListener('mouseup', stopResize)
@@ -125,8 +157,10 @@ export const useSettingStore = defineStore('setting', () => {
     theme,
     viewMode,
     background,
+    backgroundOpacity,
+    weather,
     minimizeToTray,
-    nexusApiKey,
+    autoImport,
     defaultBgUrl,
     customBgUrl,
     hasCustom,
@@ -134,9 +168,10 @@ export const useSettingStore = defineStore('setting', () => {
 
     fetchSettings,
     setBackground,
+    setWeather,
+    setBackgroundOpacity,
     uploadBackground,
     removeBackground,
-    applyBackground,
     saveSettings,
     startResize
   }

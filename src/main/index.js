@@ -1,31 +1,80 @@
-import { app, shell, Menu, Tray, nativeImage, ipcMain, BrowserWindow } from 'electron'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { startServer } from './server'
-import { join } from 'path'
 import fs from 'fs'
-import { SETTINGS_FILE } from './utils/paths.js'
-import { attachNxmHandler, setupNxmProtocol } from './nxm/protocol.js'
-import { handleNxmUrl, registerDownloadIpc } from './download/manager.js'
+import { pathToFileURL } from 'url'
+import { basename, join } from 'path'
+import { startServer } from './server'
+import { stopAria2 } from './download/aria2.js'
+import { readSettings } from './stores/setting.js'
+import { registerTranslateIpc } from './nexus/translate.js'
+import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { attachNxmHandler, setupNxmProtocol } from './nexus/protocol.js'
+import {
+  app,
+  shell,
+  Menu,
+  Tray,
+  nativeImage,
+  ipcMain,
+  BrowserWindow,
+  session,
+  nativeTheme
+} from 'electron'
+import {
+  handleNxmUrl,
+  registerDownloadIpc,
+  attachBrowserDownloads,
+  NEXUS_PARTITION
+} from './download/manager.js'
 
-// 单实例 + nxm:// 协议注册：必须在 whenReady 之前完成，
-// 否则第二个实例已经起来了，抢不到锁也接不到 second-instance
+const CHROME_VERSION = process.versions.chrome || '131.0.0.0'
+const UA_PLATFORM =
+  process.platform === 'darwin'
+    ? 'Macintosh; Intel Mac OS X 10_15_7'
+    : process.platform === 'linux'
+      ? 'X11; Linux x86_64'
+      : 'Windows NT 10.0; Win64; x64'
+
+app.userAgentFallback = `Mozilla/5.0 (${UA_PLATFORM}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROME_VERSION} Safari/537.36`
+app.commandLine.appendSwitch('disable-blink-features', 'AutomationControlled')
+
+const NEXUS_HOST = /(^|\.)(nexusmods|nexus-cdn)\.com$/i
+const ARCHIVE_PATH = /\.(7z|zip|rar|tar|gz|tgz|pak|exe|bin|dll)$/i
+
+const hostOf = (url) => {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return ''
+  }
+}
+
+const isNexusUrl = (url) => NEXUS_HOST.test(hostOf(url))
+
+const isNxmUrl = (url) => /^nxm:\/\//i.test(url)
+
+// 路径是压缩包，或者域名是纯文件 CDN，就按下载处理
+const isDownloadUrl = (url) => {
+  if (!/^https?:/i.test(url)) return false
+  try {
+    const u = new URL(url)
+    return ARCHIVE_PATH.test(u.pathname) || /(^|\.)nexus-cdn\.com$/i.test(u.hostname)
+  } catch {
+    return false
+  }
+}
+
+// 单实例和 nxm:// 必须在窗口创建前注册
 const hasSingleInstance = setupNxmProtocol()
 
-// 托盘实例必须是模块级：放在 createWindow 里会被 GC 回收，托盘图标会莫名消失
+// 托盘对象要一直留着，否则会被回收
 let tray = null
-// 真退出标志。没有它，托盘菜单的"退出"会被下面的 close 拦截挡住，软件永远关不掉
+// 标记是否真的退出，避免关闭窗口时又被最小化到托盘
 let isQuitting = false
 let mainWindow = null
 
-// 每次触发都读盘、不缓存：设置在渲染进程改完立刻生效，无需重启
+// 每次读最新设置，改完立即生效
 function readMinimizeToTray() {
-  try {
-    return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8')).minimizeToTray === true
-  } catch {
-    // 首次启动还没有 settings.json
-    return false
-  }
+  return readSettings().minimizeToTray === true
 }
 
 function showMainWindow() {
@@ -52,12 +101,10 @@ function createTray() {
       }
     ])
   )
-  // 左键单击托盘图标也恢复窗口，符合直觉
   tray.on('click', showMainWindow)
 }
 
 function createWindow() {
-  // 创建浏览器窗口
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -70,12 +117,13 @@ function createWindow() {
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
-      webSecurity: false
+      webSecurity: false,
+      // 模组下载页是内嵌网页，必须开这个开关，否则 <webview> 只是一个空标签
+      webviewTag: true
     }
   })
 
-  // 「最小化到托盘」拦的是关闭按钮（×）：最小化按钮仍然只进任务栏。
-  // 没有 isQuitting 判断的话，托盘里的"退出"会被这里挡住，软件永远关不掉。
+  // 点关闭时按设置决定是隐藏到托盘还是退出
   mainWindow.on('close', (e) => {
     if (isQuitting) return
     if (!readMinimizeToTray()) return
@@ -83,17 +131,15 @@ function createWindow() {
     mainWindow.hide()
   })
 
-  // 窗口先隐藏，等页面渲染完成后再显示，避免出现白屏闪烁
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
 
-  // 窗口真被关掉时清引用，避免托盘去操作已销毁的窗口
   mainWindow.on('closed', () => {
     mainWindow = null
   })
 
-  // 这个作用是：页面上如果有链接点了要在新窗口打开，它就拦下来、用系统浏览器打开，而不是在软件里弹新窗口。
+  // 页面里的新窗口链接交给系统浏览器
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -107,20 +153,13 @@ function createWindow() {
   }
 }
 
-// Electron 初始化完成后，才能创建窗口
 app.whenReady().then(() => {
-  // 没抢到单实例锁：setupNxmProtocol 里已经调用 app.quit()，这里不再建窗口
   if (!hasSingleInstance) return
 
-  // 设置 Windows 应用 ID（任务栏图标分组用），以后打包可改成自己的
   electronApp.setAppUserModelId('com.electron')
-
-  // 关闭系统菜单栏
   Menu.setApplicationMenu(null)
 
-  // 窗口控制 IPC 只注册一次。
-  // 原先写在 createWindow 里，macOS 下 activate 二次调用会叠加同 channel 监听器，
-  // 一次点击触发多次 close。
+  // 窗口按钮的 IPC 只注册一次
   ipcMain.on('window-minimize', () => mainWindow?.minimize())
   ipcMain.on('window-maximize', () => {
     if (!mainWindow) return
@@ -129,33 +168,127 @@ app.whenReady().then(() => {
   })
   ipcMain.on('window-close', () => mainWindow?.close())
 
-  // 开发时 F12 开关开发者工具，打包后禁用 Ctrl+R 刷新
+  nativeTheme.themeSource = readSettings().theme === 'dark' ? 'dark' : 'light'
+  ipcMain.on('theme:set', (_event, theme) => {
+    nativeTheme.themeSource = theme === 'dark' ? 'dark' : 'light'
+  })
+
+  // 判断拖进来的路径是文件还是文件夹
+  ipcMain.handle('path:info', (_event, filePath) => {
+    if (typeof filePath !== 'string' || !filePath) return null
+    try {
+      const stat = fs.statSync(filePath)
+      return {
+        path: filePath,
+        name: basename(filePath),
+        isDirectory: stat.isDirectory(),
+        isFile: stat.isFile()
+      }
+    } catch {
+      return null
+    }
+  })
+
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  // 网页里的下载留在 app 内，站外链接才交给浏览器
+  app.on('web-contents-created', (_e, contents) => {
+    if (contents.getType() !== 'webview') return
+
+    contents.on('will-navigate', (event, url) => {
+      if (isNxmUrl(url)) {
+        event.preventDefault()
+        console.log('[webview] 拦到 nxm 链接，交给下载管理器')
+        handleNxmUrl(url)
+        return
+      }
+      if (!isDownloadUrl(url)) return
+      console.log('[webview] 拦截到下载导航，改为下载：', url)
+      event.preventDefault()
+      contents.downloadURL(url)
+    })
+
+    contents.setWindowOpenHandler(({ url }) => {
+      if (isNxmUrl(url)) {
+        console.log('[webview] 新窗口是 nxm 链接，交给下载管理器')
+        handleNxmUrl(url)
+      } else if (isDownloadUrl(url)) {
+        console.log('[webview] 新窗口是下载地址，改为下载：', url)
+        contents.downloadURL(url)
+      } else if (isNexusUrl(url)) {
+        contents.loadURL(url)
+      } else if (/^https?:/i.test(url)) {
+        shell.openExternal(url)
+      }
+      return { action: 'deny' }
+    })
+  })
+
   startServer()
   registerDownloadIpc()
+  registerTranslateIpc()
+
+  // webview 的 preload 不参与打包，开发读源码，打包后读 resources
+  const resolveWebviewPreload = () => {
+    const candidates = [
+      app.isPackaged ? join(process.resourcesPath, 'webview-preload.js') : '',
+      join(app.getAppPath(), 'src/main/resources/webview-preload.js'),
+      join(__dirname, '../../src/main/resources/webview-preload.js')
+    ].filter(Boolean)
+
+    const preloadFile = candidates.find((candidate) => fs.existsSync(candidate))
+    if (!preloadFile) {
+      console.warn('[webview] 找不到翻译 preload，已尝试：', candidates)
+      return ''
+    }
+
+    return pathToFileURL(preloadFile).toString()
+  }
+
+  ipcMain.handle('webview:preload', () => resolveWebviewPreload())
+  // 渲染层 preload 启动时同步拿一次：保证 <webview> 第一次创建就带上 preload，
+  // 避免「先加载网页、后设置 preload」导致整页翻译和下载按钮不生效。
+  ipcMain.on('webview:preload-sync', (event) => {
+    event.returnValue = resolveWebviewPreload()
+  })
+
+  // 清掉 N 网登录/验证缓存，解决反复人机验证
+  ipcMain.handle('nexus:clear-session', async () => {
+    const ses = session.fromPartition(NEXUS_PARTITION)
+    await ses.clearStorageData({
+      storages: ['cookies', 'localstorage', 'cachestorage', 'indexdb', 'serviceworkers']
+    })
+    await ses.clearCache()
+    return true
+  })
+  // 网页下载统一接到下载任务表
+  attachBrowserDownloads(session.fromPartition(NEXUS_PARTITION))
+  attachBrowserDownloads(session.defaultSession)
   createWindow()
   createTray()
 
-  // 窗口建好后再接 nxm 处理：此时 BrowserWindow 已存在，
-  // 冷启动时 args 里的链接能从缓冲区补发出来
+  // 窗口建好后再接 nxm，冷启动链接会在这时补发
   attachNxmHandler(handleNxmUrl)
 
-  // macOS 特有：点 dock 图标且无窗口时，重新创建窗口
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
-// 托盘里的"退出"走 app.quit()，这里必须先置标志，
-// 否则会被 close 拦截变成"隐藏窗口"，软件关不掉
+// 真退出前先停掉 aria2
 app.on('before-quit', () => {
   isQuitting = true
+  stopAria2()
 })
 
-// 所有窗口关闭时退出软件（macOS 除外，macOS 习惯是窗口关了软件还在后台）
+// 在你创建 BrowserWindow 的地方，或者在 app.whenReady() 之后统一挂：
+app.on('browser-window-created', (event, window) => {
+  window.webContents.setWebRTCIPHandlingPolicy('disable_non_proxied_udp')
+})
+
+// Windows/Linux 关完窗口就退出，macOS 留在后台
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()

@@ -41,10 +41,11 @@ export const useNoticeStore = defineStore('notice', () => {
     }
   }
 
-  // 保存已读状态到 data/notices.json
+  // 保存已读状态到 data/notice-state.json
   const saveNotices = async () => {
     try {
-      await axios.post('/api/notices',
+      await axios.post(
+        '/api/notices',
         notices.value.map((n) => ({ id: n.id, read: n.read, readAt: n.readAt }))
       )
     } catch (e) {

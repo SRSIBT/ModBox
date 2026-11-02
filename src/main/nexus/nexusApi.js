@@ -1,13 +1,11 @@
 import { net } from 'electron'
-import fs from 'fs'
-import { SETTINGS_FILE } from '../utils/paths.js'
+import { getAccessToken, NexusAuthError } from './auth.js'
 
-// N 网 REST v1。这里只用到两个接口：
+// N 网 REST v1，OAuth Bearer 鉴权。
 //   GET /games/{domain}/mods/{modId}.json                              模组名（拿不到不阻断下载）
 //   GET /games/{domain}/mods/{modId}/files/{fileId}/download_link.json 换 CDN 直链
 //
-// 换直链必须带 apikey 头；免费账号还要额外带 nxm 链接里的 key + expires。
-// 返回的是**数组**，直链在 [0].URI（大写 URI）。
+// 免费账号还要额外带 nxm 链接里的 key + expires；返回数组，直链在 [0].URI。
 
 const REST_URL = 'https://api.nexusmods.com/v1'
 
@@ -20,35 +18,30 @@ export class NxmApiError extends Error {
   }
 }
 
-export const readApiKey = () => {
+const authHeaders = async () => {
+  let token = ''
   try {
-    const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'))
-    return String(settings?.nexusApiKey || '').trim()
-  } catch {
-    // 首次启动还没 settings.json
-    return ''
+    token = await getAccessToken()
+  } catch (error) {
+    if (error instanceof NexusAuthError) throw error
+    throw new NexusAuthError('AUTH', 'N 网登录状态无效，请重新登录')
+  }
+
+  return {
+    accept: 'application/json',
+    authorization: `Bearer ${token}`,
+    'Application-Name': 'ModBox',
+    'Application-Version': '1.0.0'
   }
 }
 
-const requestHeaders = (apiKey) => ({
-  apikey: apiKey,
-  accept: 'application/json',
-  'Application-Name': 'ModBox',
-  'Application-Version': '1.0.0'
-})
-
-// 用 net.fetch（Chromium 网络栈）而不是 axios：自动跟随系统代理，证书走系统库，
-// 和 routes/nexus.js 的选择保持一致
 const getJson = async (apiPath) => {
-  const apiKey = readApiKey()
-  if (!apiKey) {
-    throw new NxmApiError('NO_KEY', '还没配置 Nexus API Key：设置 → Nexus API Key')
-  }
+  const headers = await authHeaders()
 
   let res
   try {
     res = await net.fetch(`${REST_URL}${apiPath}`, {
-      headers: requestHeaders(apiKey),
+      headers,
       signal: AbortSignal.timeout(20000)
     })
   } catch (e) {
@@ -68,14 +61,15 @@ const getJson = async (apiPath) => {
 }
 
 const mapDownloadLinkError = (e) => {
+  if (e instanceof NexusAuthError) return e
   if (e.code !== 'UPSTREAM') return e
 
   const byStatus = {
-    400: '下载授权无效：浏览器和 ModBox 要登录同一个 N 网账号',
-    401: 'Nexus API Key 无效，去设置里重新配置',
-    403: 'N 网拒绝了这次下载授权，回网站重新点「Mod Manager Download」',
+    400: '下载授权无效：请在 N 网页面重新点一次下载',
+    401: 'N 网登录已过期，请重新授权',
+    403: 'N 网拒绝了这次下载授权；请确认已登录，或回 N 网页面重新下载',
     404: '这个文件已经不能下载了（可能已被作者删除）',
-    410: '下载授权已过期，回网站重新点「Mod Manager Download」',
+    410: '下载授权已过期，回 N 网页面重新下载',
     429: 'N 网请求太频繁，过一会再试'
   }
 
@@ -101,12 +95,13 @@ export const fetchModInfo = async (domain, modId) => {
  */
 export const fetchDownloadLink = async ({ domain, modId, fileId, key, expires }) => {
   const params = new URLSearchParams()
-  params.set('key', key)
-  params.set('expires', String(expires))
+  if (key) params.set('key', key)
+  if (expires) params.set('expires', String(expires))
+  const query = params.toString()
 
   const apiPath =
     `/games/${encodeURIComponent(domain)}/mods/${modId}/files/${fileId}/download_link.json` +
-    `?${params.toString()}`
+    (query ? `?${query}` : '')
 
   let data
   try {
@@ -120,7 +115,6 @@ export const fetchDownloadLink = async ({ domain, modId, fileId, key, expires })
 
   return {
     url: item.URI,
-    // name 里已经带了「模组名-ID-版本.扩展名」，直接拿来当文件名最省事
     name: item.name || item.short_name || ''
   }
 }

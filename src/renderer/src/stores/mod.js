@@ -4,39 +4,36 @@ import { useSettingStore } from './setting'
 import { ref, computed, reactive } from 'vue'
 
 export const useModStore = defineStore('mods', () => {
-
-  const modList = ref([])                   // 模组列表
-  const modFiles = ref([])                  // 模组文件树
-  const selectedIds = ref(new Set())        // 当前选中 Mod ID
-  const installingIds = ref(new Set())      // 正在安装/卸载的 Mod ID
-  const settingStore = useSettingStore()    // 设置store
-  const filter = reactive({                 // 筛选条件
+  const modList = ref([]) // 模组列表
+  const modFiles = ref([]) // 模组文件树
+  const selectedIds = ref(new Set()) // 当前选中 Mod ID
+  const installingIds = ref(new Set()) // 正在安装/卸载的 Mod ID
+  const page = ref(1) // 当前页码
+  const pageSize = ref(20) // 每页条数
+  const settingStore = useSettingStore() // 设置store
+  const filter = reactive({
+    // 筛选条件
     keyword: '',
     type: '',
     group: '',
     enabled: ''
   })
 
-  const totalCount = computed(() => modList.value.length)                                     // 模组总数
-  const activeGameId = computed(() => settingStore.activeGameId)                              // 激活游戏ID
-  const installedCount = computed(() => modList.value.filter((m) => m.installed).length)      // 模组安装数量
-  const uninstalledCount = computed(() => modList.value.filter((m) => !m.installed).length)   // 模组未安装数量
+  const totalCount = computed(() => modList.value.length) // 模组总数
+  const activeGameId = computed(() => settingStore.activeGameId) // 激活游戏ID
+  const installedCount = computed(() => modList.value.filter((m) => m.installed).length) // 模组安装数量
+  const uninstalledCount = computed(() => modList.value.filter((m) => !m.installed).length) // 模组未安装数量
 
   // Mod 类型列表
   const typeList = computed(() => {
     const set = new Set(modList.value.map((m) => m.type).filter(Boolean))
-    return [
-      { label: '全部类型', value: '' },
-      ...[...set].map((t) => ({ label: t, value: t }))
-    ]
+    return [{ label: '全部类型', value: '' }, ...[...set].map((t) => ({ label: t, value: t }))]
   })
 
   // Mod 分组列表
   const groupList = computed(() => {
     const set = new Set(modList.value.map((m) => m.group).filter(Boolean))
-    return [
-      { label: '全部分组', value: '' },
-      ...[...set].map((g) => ({ label: g, value: g }))]
+    return [{ label: '全部分组', value: '' }, ...[...set].map((g) => ({ label: g, value: g }))]
   })
 
   // 筛选后的 Mod 列表
@@ -59,6 +56,12 @@ export const useModStore = defineStore('mods', () => {
     })
   })
 
+  // 当前页要展示的 Mod
+  const pagedList = computed(() => {
+    const start = (page.value - 1) * pageSize.value
+    return filteredList.value.slice(start, start + pageSize.value)
+  })
+
   // 获取 Mod 配置
   const fetchMods = async () => {
     const gameId = activeGameId.value
@@ -68,6 +71,12 @@ export const useModStore = defineStore('mods', () => {
     }
     const res = await axios.get(`/api/mods/${gameId}`)
     modList.value = res.data.mods || []
+
+    // 删除/重新加载后把已不存在的选中项剔掉，避免批量操作栏一直显示旧数量
+    const liveIds = new Set(modList.value.map((m) => m.id))
+    if ([...selectedIds.value].some((id) => !liveIds.has(id))) {
+      selectedIds.value = new Set([...selectedIds.value].filter((id) => liveIds.has(id)))
+    }
   }
 
   // 修改 Mod 配置
@@ -153,18 +162,52 @@ export const useModStore = defineStore('mods', () => {
     return results
   }
 
-  // 导入 Mod
+  // 导入 Mod：不传路径时走系统文件夹选择器，传路径时直接导入
   const importMods = async (paths = null) => {
     const gameId = requireGameId()
-    if (!gameId) return
+    if (!gameId) return { success: false, errors: ['请先在设置中选择游戏'] }
 
-    if (!paths) {
-      const res = await axios.get('/api/dialog/folders')
-      paths = res.data.paths
+    try {
+      if (!paths) {
+        const res = await axios.get('/api/dialog/folders')
+        paths = res.data.paths
+      }
+      if (!paths?.length) return { success: false, errors: [] }
+
+      const res = await axios.post('/api/mods/import', { gameId, paths })
+      await fetchMods()
+      return res.data
+    } catch (e) {
+      const message = e.response?.data?.error || e.message
+      console.error('[mods] 导入失败：', message)
+      return { success: false, errors: [message] }
     }
-    if (!paths?.length) return
-    await axios.post('/api/mods/import', { gameId, paths })
+  }
+
+  // 逐个导入，顺便把进度报给上传组件
+  const importModsWithProgress = async (items, onProgress) => {
+    const total = items.length
+    let success = 0
+    const errors = []
+
+    for (let i = 0; i < total; i++) {
+      const item = items[i]
+      const result = await importMods([item.path])
+      if (result?.success && !result.errors?.length) success++
+      else errors.push(`${item.name}：${result?.errors?.[0] || result?.error || '导入失败'}`)
+      onProgress?.(Math.round(((i + 1) / total) * 100))
+    }
+
+    return { success, errors, total }
+  }
+
+  // 一键卸载全部 Mod，并清理游戏目录里的残留
+  const cleanupMods = async () => {
+    const gameId = requireGameId()
+    if (!gameId) throw new Error('请先选择游戏')
+    const res = await axios.post('/api/mods/cleanup', { gameId })
     await fetchMods()
+    return res.data
   }
 
   // 打开 Mod 文件夹
@@ -195,14 +238,18 @@ export const useModStore = defineStore('mods', () => {
   const openGameFolder = async () => {
     const gameId = requireGameId()
     if (!gameId) return
-    await axios.post('/api/game/open-folder', { gameId })
+    const res = await axios.post('/api/game/open-folder', { gameId })
+    if (!res.data?.success) throw new Error(res.data?.error || '打开游戏目录失败')
+    return res.data
   }
 
   // 启动游戏
   const launchGame = async () => {
     const gameId = requireGameId()
     if (!gameId) return
-    await axios.post('/api/game/launch', { gameId })
+    const res = await axios.post('/api/game/launch', { gameId })
+    if (!res.data?.success) throw new Error(res.data?.error || '启动游戏失败')
+    return res.data
   }
 
   // 验证激活游戏ID
@@ -216,7 +263,6 @@ export const useModStore = defineStore('mods', () => {
   }
 
   return {
-    activeGameId,
     filter,
     modList,
     modFiles,
@@ -224,7 +270,10 @@ export const useModStore = defineStore('mods', () => {
     groupList,
     selectedIds,
     installingIds,
+    page,
+    pageSize,
     filteredList,
+    pagedList,
     totalCount,
     installedCount,
     uninstalledCount,
@@ -235,6 +284,8 @@ export const useModStore = defineStore('mods', () => {
     setInstalled,
     setInstalledBatch,
     importMods,
+    importModsWithProgress,
+    cleanupMods,
     pickCover,
     openModFolder,
     fetchModFiles,

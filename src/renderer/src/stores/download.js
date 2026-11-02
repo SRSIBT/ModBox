@@ -1,30 +1,26 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useSettingStore } from './setting'
-import { useGameStore } from './game'
 
 // 任务状态机：
 //   downloading -> paused      暂停
-//   paused      -> downloading 继续（从 0 重下）
+//   paused      -> downloading 继续
 //   downloading -> completed   下完
 //   downloading -> failed      出错
 //   failed      -> downloading 重试
-//   queued 留给将来的下载队列，本版不产生
-export const TASK_STATUS = {
+const TASK_STATUS = {
   downloading: 'downloading',
   paused: 'paused',
   completed: 'completed',
-  failed: 'failed',
-  queued: 'queued'
+  failed: 'failed'
 }
 
-// 状态胶囊的文案与配色键（配色键在组件里映射到 --success/--warning/--danger）
+// 状态胶囊的文案与配色键
 export const STATUS_META = {
   [TASK_STATUS.downloading]: { label: '下载中', tone: 'success' },
   [TASK_STATUS.paused]: { label: '已暂停', tone: 'muted' },
   [TASK_STATUS.completed]: { label: '已完成', tone: 'accent' },
-  [TASK_STATUS.failed]: { label: '失败', tone: 'danger' },
-  [TASK_STATUS.queued]: { label: '队列中', tone: 'warning' }
+  [TASK_STATUS.failed]: { label: '失败', tone: 'danger' }
 }
 
 const KB = 1024
@@ -68,31 +64,16 @@ export const fmtEta = (seconds) => {
   return m ? `${h} 小时 ${m} 分` : `${h} 小时`
 }
 
-export const fmtAgo = (ts, now = Date.now()) => {
-  const diff = Math.max(0, (now - (Number(ts) || 0)) / 1000)
-  if (diff < 60) return '刚刚'
-  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`
-  if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`
-  return `${Math.floor(diff / 86400)} 天前`
-}
-
 export const useDownloadStore = defineStore('download', () => {
   const settingStore = useSettingStore()
-  const gameStore = useGameStore()
 
   // ---------- 状态 ----------
   const tasks = ref([])
   const tab = ref('active') // active | done
   // 任务镜像：真源在主进程，这里靠 download:* 事件同步
   const bridgeReady = ref(false)
-  const loading = ref(false)
 
-  // 下载器配置：这一版只是把截图里那排控件摆出来，值是死的
-  const shards = ref(8)
-  const retries = ref(3)
-  const configurable = ref(false) // 接上分片下载后置 true，控件即可用
-
-  // 秒级时钟：相对时间与「卡住」判定都要跟着刷新
+  // 秒级时钟：「卡住」判定要跟着刷新
   const now = ref(Date.now())
 
   // 一次性提示（解析失败、授权过期等），由组件显示并自动消失
@@ -102,7 +83,6 @@ export const useDownloadStore = defineStore('download', () => {
 
   // ---------- 派生 ----------
   const activeGameId = computed(() => settingStore.activeGameId)
-  const activeGame = computed(() => gameStore.activeGame)
 
   // 只展示当前激活游戏的任务；没选游戏时退回全量（此时标题栏会提示）。
   // unmatched 的任务不过滤：链接里的游戏没配到本地时也得让用户看见，否则像是没下。
@@ -193,7 +173,6 @@ export const useDownloadStore = defineStore('download', () => {
   // ============================================================
   // 桥接
   // ============================================================
-  const bridgeCleanups = []
 
   /**
    * 在 App.vue 里调一次即可。订阅放在应用级而不是下载列表页：
@@ -212,18 +191,16 @@ export const useDownloadStore = defineStore('download', () => {
       return
     }
 
-    bridgeCleanups.push(
-      api.onAdded(upsertFromMain),
-      api.onState(upsertFromMain),
-      api.onProgress(applyProgress),
-      api.onRemoved((id) => {
-        tasks.value = tasks.value.filter((t) => t.id !== id)
-      }),
-      api.onNotice((payload) => setNotice(payload?.level || 'info', payload?.message)),
-      api.onFocus(() => {
-        focusRequest.value += 1
-      })
-    )
+    api.onAdded(upsertFromMain)
+    api.onState(upsertFromMain)
+    api.onProgress(applyProgress)
+    api.onRemoved((id) => {
+      tasks.value = tasks.value.filter((t) => t.id !== id)
+    })
+    api.onNotice((payload) => setNotice(payload?.level || 'info', payload?.message))
+    api.onFocus(() => {
+      focusRequest.value += 1
+    })
 
     try {
       const snapshot = await api.list()
@@ -250,9 +227,8 @@ export const useDownloadStore = defineStore('download', () => {
 
   const resumeTask = (id) => callApi(() => window.downloadAPI.resume(id), '继续下载失败')
 
-  const cancelTask = (id) => callApi(() => window.downloadAPI.cancel(id), '取消下载失败')
-
-  const deleteTask = (id) => callApi(() => window.downloadAPI.remove(id), '移除失败')
+  const deleteTask = (id, removeFile = false) =>
+    callApi(() => window.downloadAPI.remove(id, removeFile), '删除失败')
 
   // 主进程的 resume 对 failed 任务就是「清错误、从 0 重下」
   const retryTask = (id) => callApi(() => window.downloadAPI.resume(id), '重试失败')
@@ -261,9 +237,9 @@ export const useDownloadStore = defineStore('download', () => {
 
   const pauseAll = () => callApi(() => window.downloadAPI.pauseAll(), '全部暂停失败')
 
-  const clearCompleted = async () => {
+  const clearCompleted = async (removeFile = false) => {
     for (const task of [...doneTasks.value]) {
-      await callApi(() => window.downloadAPI.remove(task.id), '移除失败')
+      await callApi(() => window.downloadAPI.remove(task.id, removeFile), '移除失败')
     }
     if (!doneTasks.value.length && tab.value === 'done') tab.value = 'active'
   }
@@ -281,16 +257,9 @@ export const useDownloadStore = defineStore('download', () => {
     // 状态
     tasks,
     tab,
-    bridgeReady,
-    loading,
-    shards,
-    retries,
-    configurable,
-    now,
     notice,
     focusRequest,
     activeGameId,
-    activeGame,
 
     // 派生
     activeTasks,
@@ -307,14 +276,12 @@ export const useDownloadStore = defineStore('download', () => {
     setTab,
     pauseTask,
     resumeTask,
-    cancelTask,
     deleteTask,
     retryTask,
     revealTask,
     pauseAll,
     clearCompleted,
     isStalled,
-    dismissNotice,
-    setNotice
+    dismissNotice
   }
 })

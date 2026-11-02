@@ -2,6 +2,7 @@
 node_modules/
 
 # 构建产物
+out/
 dist/
 dist-ssr/
 
@@ -23,6 +24,7 @@ dist-ssr/
 # 缓存
 .cache/
 .vite/
+.eslintcache
 coverage/
 
 # 运行时数据（settings/公告已读状态/壁纸/游戏 mod，含大文件）

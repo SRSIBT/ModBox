@@ -23,19 +23,9 @@
       <span class="dl__title-divider"></span>
 
       <button class="bulk" :disabled="!hasRunning" @click="pauseAll">全部暂停</button>
-      <button class="bulk" :disabled="!counts.completed" @click="clearCompleted">清空已完成</button>
-    </div>
-
-    <!-- 一次性提示：nxm 解析失败、授权过期等 -->
-    <div v-if="notice" class="dl__notice" :class="`dl__notice--${notice.level}`">
-      <svg class="dl__notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 8v5" />
-        <path d="M12 16.5v.01" />
-      </svg>
-      <span class="dl__notice-text">{{ notice.message }}</span>
-      <button class="dl__notice-close" aria-label="关闭提示" @click="dismissNotice">×</button>
+      <button class="bulk" :disabled="!counts.completed" @click="clearVisible = true">
+        清空已完成
+      </button>
     </div>
 
     <!-- ② 操作栏：状态页签 + 下载器配置 + 总速度 -->
@@ -53,22 +43,14 @@
 
       <span class="dl__tool-divider"></span>
 
-      <!-- 下载器配置：接口还没接，先禁用占位，值也不参与计算 -->
-      <label class="field" data-tip="暂未接入真实下载器">
-        <span class="field__label">分片数</span>
-        <select class="field__select" :value="shards" :disabled="!configurable">
-          <option v-for="n in [1, 2, 4, 8, 16, 32]" :key="n" :value="n">{{ n }}</option>
-        </select>
+      <!-- 下完自动解压进模组库 -->
+      <label class="dl__toggle" title="下载完成后自动解压到模组库，并写入模组信息">
+        <span class="dl__toggle-text">自动导入</span>
+        <span class="switch">
+          <input type="checkbox" :checked="autoImport" @change="setAutoImport($event.target.checked)" />
+          <span class="switch__slider"></span>
+        </span>
       </label>
-
-      <label class="field" data-tip="暂未接入真实下载器">
-        <span class="field__label">重试次数</span>
-        <select class="field__select" :value="retries" :disabled="!configurable">
-          <option v-for="n in [0, 1, 2, 3, 5, 10]" :key="n" :value="n">{{ n }}</option>
-        </select>
-      </label>
-
-      <div class="grow"></div>
 
       <div v-if="totalSpeed > 0" class="dl__tool-speed">
         <span class="dl__tool-speed-label">总速度</span>
@@ -125,12 +107,6 @@
                 <span class="row__error">{{ task.error }}</span>
               </template>
             </div>
-
-            <div class="row__foot">
-              <span class="row__file" :title="task.fileName">{{ task.fileName }}</span>
-              <span class="row__sep">·</span>
-              <span class="row__ago">{{ agoText(task.addedAt) }}加入</span>
-            </div>
           </div>
 
           <!-- 操作按状态收敛：能做什么由 TASK_ACTIONS 决定，模板不写 if 堆 -->
@@ -163,37 +139,31 @@
         </template>
         <template v-else>
           <p class="dl__empty-title">暂无正在下载的任务</p>
-          <p class="dl__empty-desc">
-            在 N 网文件页点「Mod Manager Download」，链接会自动交给 ModBox 接管
-          </p>
+          <p class="dl__empty-desc">在 N 网点击「Slow download」，链接会自动交给 ModBox 接管</p>
         </template>
       </div>
     </div>
+
+    <ConfirmDialog v-model:visible="deleteVisible" title="删除已完成任务"
+      :message="`确定删除「${deleteTarget?.modName || ''}」这条下载记录吗？`" checkbox checkbox-label="同时删除已下载的文件"
+      @confirm="confirmDelete" @cancel="deleteVisible = false" />
+
+    <ConfirmDialog v-model:visible="clearVisible" title="清空已完成" message="确定清空所有已完成的下载记录吗？" checkbox
+      checkbox-label="同时删除全部已下载的文件" @confirm="confirmClear" @cancel="clearVisible = false" />
   </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDownloadStore } from '@/stores/download'
 import { useSettingStore } from '@/stores/setting'
-import { STATUS_META, fmtPercent, fmtBytes, fmtSpeed, fmtEta, fmtAgo } from '@/stores/download'
+import { STATUS_META, fmtPercent, fmtBytes, fmtSpeed, fmtEta } from '@/stores/download'
+import ConfirmDialog from '../common/ConfirmDialog.vue'
 
 const taskStore = useDownloadStore()
-const {
-  tab,
-  shards,
-  retries,
-  configurable,
-  activeGameId,
-  activeTasks,
-  doneTasks,
-  currentTasks,
-  counts,
-  totalSpeed,
-  hasRunning,
-  notice
-} = storeToRefs(taskStore)
+const { tab, activeGameId, activeTasks, doneTasks, currentTasks, counts, totalSpeed, hasRunning } =
+  storeToRefs(taskStore)
 
 const {
   setTab,
@@ -201,24 +171,32 @@ const {
   clearCompleted,
   pauseTask,
   resumeTask,
-  cancelTask,
   deleteTask,
   retryTask,
   revealTask,
-  isStalled,
-  dismissNotice
+  isStalled
 } = taskStore
+
+const deleteVisible = ref(false)
+const deleteTarget = ref(null)
+const clearVisible = ref(false)
 
 // 订阅与假数据装载都在 App.vue 的 initBridge 里做，
 // 这里只负责展示和转发动作
 const settingStore = useSettingStore()
+const { autoImport } = storeToRefs(settingStore)
+
+// 开关一改就落盘：主进程是按 settings.json 里的值决定下载完成后干什么的
+const setAutoImport = async (value) => {
+  autoImport.value = value
+  await settingStore.saveSettings()
+}
 
 // 图标用 path 数组存，模板里统一渲染，避免每个按钮写一段重复的 svg
 const ICONS = {
   pause: ['M9 5v14', 'M15 5v14'],
   play: ['M7 4.5l12 7.5-12 7.5z'],
   retry: ['M20 12a8 8 0 1 1-2.34-5.66', 'M20 4v5h-5'],
-  cancel: ['M6 6l12 12', 'M18 6L6 18'],
   folder: ['M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],
   trash: ['M4 7h16', 'M9 7V4h6v3', 'M6 7l1 13h10l1-13', 'M10 11v6', 'M14 11v6']
 }
@@ -227,63 +205,70 @@ const ICONS = {
 const TASK_ACTIONS = {
   downloading: [
     { key: 'pause', tip: '暂停', tone: 'plain', kind: 'icon', paths: ICONS.pause },
-    { key: 'cancel', tip: '取消下载', tone: 'plain', kind: 'icon', paths: ICONS.cancel },
-    { key: 'delete', tip: '从列表移除', tone: 'danger', kind: 'icon', paths: ICONS.trash }
+    { key: 'delete', tip: '删除任务', tone: 'danger', kind: 'icon', paths: ICONS.trash }
   ],
   paused: [
     { key: 'resume', tip: '继续下载', tone: 'primary', kind: 'icon', paths: ICONS.play },
-    { key: 'cancel', tip: '取消下载', tone: 'plain', kind: 'icon', paths: ICONS.cancel },
-    { key: 'delete', tip: '从列表移除', tone: 'danger', kind: 'icon', paths: ICONS.trash }
+    { key: 'delete', tip: '删除任务', tone: 'danger', kind: 'icon', paths: ICONS.trash }
   ],
   failed: [
     { key: 'retry', tip: '重试', tone: 'primary', kind: 'text', label: '重试' },
-    { key: 'delete', tip: '从列表移除', tone: 'danger', kind: 'icon', paths: ICONS.trash }
+    { key: 'delete', tip: '删除任务', tone: 'danger', kind: 'icon', paths: ICONS.trash }
   ],
   completed: [
     // 打开所在文件夹放前面，删除放最后（破坏性操作离手最远）
     { key: 'reveal', tip: '打开所在文件夹', tone: 'plain', kind: 'icon', paths: ICONS.folder },
-    { key: 'delete', tip: '从列表移除', tone: 'danger', kind: 'text', label: '删除' }
+    { key: 'delete', tip: '删除记录', tone: 'danger', kind: 'text', label: '删除' }
   ]
 }
 
 const metaOf = (task) => STATUS_META[task.status] || { label: task.status, tone: 'muted' }
 const actionsOf = (task) => TASK_ACTIONS[task.status] || []
 
-// 相对时间依赖秒级时钟，这里把 now 收进来，模板里直接写 task.addedAt 就行
-const agoText = (ts) => fmtAgo(ts, taskStore.now)
+const askDelete = (task) => {
+  // 已完成的任务先问一句：只删记录，还是连文件一起删
+  if (task.status === 'completed') {
+    deleteTarget.value = task
+    deleteVisible.value = true
+    return
+  }
+  // 进行中/暂停/失败：一个删除按钮就够了，任务和文件一起清
+  deleteTask(task.id)
+}
+
+const confirmDelete = (payload) => {
+  if (deleteTarget.value) {
+    deleteTask(deleteTarget.value.id, payload?.checked === true)
+  }
+  deleteVisible.value = false
+  deleteTarget.value = null
+}
+
+const confirmClear = async (payload) => {
+  clearVisible.value = false
+  await clearCompleted(payload?.checked === true)
+}
 
 const ACTION_HANDLERS = {
   pause: pauseTask,
   resume: resumeTask,
   retry: retryTask,
-  cancel: cancelTask,
-  delete: deleteTask,
   reveal: revealTask
 }
 
 const runAction = (key, task) => {
+  if (key === 'delete') {
+    askDelete(task)
+    return
+  }
   const handler = ACTION_HANDLERS[key]
   if (handler) handler(task.id)
 }
-
-// 提示条自动消失；切页/卸载时把定时器清掉
-let noticeTimer = null
-watch(
-  notice,
-  (value) => {
-    clearTimeout(noticeTimer)
-    if (!value) return
-    noticeTimer = setTimeout(() => dismissNotice(), 8000)
-  },
-  { immediate: true }
-)
 
 onMounted(() => {
   // 激活游戏在设置里；从句柄直接唤起跳到这页时可能还没加载过
   if (!settingStore.activeGameId) settingStore.fetchSettings()
 })
-
-onUnmounted(() => clearTimeout(noticeTimer))
 </script>
 
 <style scoped>
@@ -308,6 +293,64 @@ onUnmounted(() => clearTimeout(noticeTimer))
   background: var(--divider);
 }
 
+/* ---------- 自动导入 / 自动翻译 开关 ---------- */
+.dl__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-sub);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dl__toggle-text {
+  white-space: nowrap;
+}
+
+.switch {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch__slider {
+  position: absolute;
+  inset: 0;
+  background: var(--inner-border);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.switch__slider::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.switch input:checked+.switch__slider {
+  background: var(--accent);
+}
+
+.switch input:checked+.switch__slider::before {
+  transform: translateX(14px);
+}
+
 /* ---------- ① 标题栏 ---------- */
 .dl__title {
   flex-shrink: 0;
@@ -326,59 +369,6 @@ onUnmounted(() => clearTimeout(noticeTimer))
 .dl__title-note {
   font-size: 11px;
   color: var(--warning);
-}
-
-/* ---------- 一次性提示条 ---------- */
-.dl__notice {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  font-size: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--inner-border);
-  background: var(--inner-bg);
-}
-
-.dl__notice--error {
-  color: var(--danger);
-  border-color: var(--danger);
-  background: var(--danger-soft);
-}
-
-.dl__notice--info {
-  color: var(--text-sub);
-}
-
-.dl__notice-icon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-.dl__notice-text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dl__notice-close {
-  flex-shrink: 0;
-  padding: 0 4px;
-  font-size: 16px;
-  line-height: 1;
-  color: inherit;
-  opacity: 0.7;
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-.dl__notice-close:hover {
-  opacity: 1;
 }
 
 .stat {
@@ -500,35 +490,12 @@ onUnmounted(() => clearTimeout(noticeTimer))
   background: rgba(255, 255, 255, 0.25);
 }
 
-.field {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-sub);
-}
-
-.field__select {
-  padding: 5px 6px;
-  font-size: 12px;
-  color: var(--text);
-  border-radius: 7px;
-  border: 1px solid var(--inner-border);
-  background: var(--inner-bg);
-  outline: none;
-}
-
-/* 禁用态要保持可读：这里只是接口没接，不是功能不可用 */
-.field__select:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  color: var(--text-sub);
-}
-
 .dl__tool-speed {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  /* 总速度永远贴在最右边 */
+  margin-left: auto;
 }
 
 .dl__tool-speed-label {
@@ -556,6 +523,7 @@ onUnmounted(() => clearTimeout(noticeTimer))
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -743,27 +711,6 @@ onUnmounted(() => clearTimeout(noticeTimer))
   white-space: nowrap;
 }
 
-/* 文件名行 */
-.row__foot {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text-faint);
-  min-width: 0;
-}
-
-.row__file {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.row__ago {
-  flex-shrink: 0;
-}
-
 /* 操作按钮 */
 .row__ops {
   flex-shrink: 0;
@@ -849,11 +796,11 @@ onUnmounted(() => clearTimeout(noticeTimer))
 
 /* 提示气泡：与 ModToolbar 同款，但方向朝下。
    操作按钮在纵向滚动容器里，朝上的气泡会被容器上沿裁掉。 */
-:is(.op, .field)[data-tip] {
+.op[data-tip] {
   position: relative;
 }
 
-:is(.op, .field)[data-tip]::after {
+.op[data-tip]::after {
   content: attr(data-tip);
   position: absolute;
   top: calc(100% + 7px);
@@ -874,7 +821,7 @@ onUnmounted(() => clearTimeout(noticeTimer))
   z-index: 10;
 }
 
-:is(.op, .field)[data-tip]:hover::after {
+.op[data-tip]:hover::after {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }

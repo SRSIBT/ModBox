@@ -1,26 +1,35 @@
 "use strict";
 const electron = require("electron");
-const preload = require("@electron-toolkit/preload");
 electron.contextBridge.exposeInMainWorld("windowAPI", {
   minimize: () => electron.ipcRenderer.send("window-minimize"),
   maximize: () => electron.ipcRenderer.send("window-maximize"),
-  close: () => electron.ipcRenderer.send("window-close")
+  close: () => electron.ipcRenderer.send("window-close"),
+  setTheme: (theme) => electron.ipcRenderer.send("theme:set", theme)
 });
 electron.contextBridge.exposeInMainWorld("electronAPI", {
   getPathForFile: (file) => electron.webUtils.getPathForFile(file),
+  getPathInfo: (filePath) => electron.ipcRenderer.invoke("path:info", filePath),
   openExternal: (url) => electron.shell.openExternal(url)
 });
+let webviewPreloadPath = "";
+try {
+  webviewPreloadPath = electron.ipcRenderer.sendSync("webview:preload-sync") || "";
+} catch {
+  webviewPreloadPath = "";
+}
+electron.contextBridge.exposeInMainWorld("webviewAPI", {
+  preloadPath: webviewPreloadPath,
+  preload: () => electron.ipcRenderer.invoke("webview:preload"),
+  clearNexusSession: () => electron.ipcRenderer.invoke("nexus:clear-session")
+});
 const subscribe = (channel, callback) => {
-  const listener = (_event, payload) => callback(payload);
-  electron.ipcRenderer.on(channel, listener);
-  return () => electron.ipcRenderer.removeListener(channel, listener);
+  electron.ipcRenderer.on(channel, (_event, payload) => callback(payload));
 };
 electron.contextBridge.exposeInMainWorld("downloadAPI", {
   list: () => electron.ipcRenderer.invoke("download:list"),
   pause: (id) => electron.ipcRenderer.invoke("download:pause", id),
   resume: (id) => electron.ipcRenderer.invoke("download:resume", id),
-  cancel: (id) => electron.ipcRenderer.invoke("download:cancel", id),
-  remove: (id) => electron.ipcRenderer.invoke("download:remove", id),
+  remove: (id, removeFile = false) => electron.ipcRenderer.invoke("download:remove", id, removeFile),
   reveal: (id) => electron.ipcRenderer.invoke("download:reveal", id),
   pauseAll: () => electron.ipcRenderer.invoke("download:pause-all"),
   onAdded: (cb) => subscribe("download:added", cb),
@@ -30,15 +39,3 @@ electron.contextBridge.exposeInMainWorld("downloadAPI", {
   onNotice: (cb) => subscribe("download:notice", cb),
   onFocus: (cb) => subscribe("download:focus", cb)
 });
-const api = {};
-if (process.contextIsolated) {
-  try {
-    electron.contextBridge.exposeInMainWorld("electron", preload.electronAPI);
-    electron.contextBridge.exposeInMainWorld("api", api);
-  } catch (error) {
-    console.error(error);
-  }
-} else {
-  window.electron = preload.electronAPI;
-  window.api = api;
-}

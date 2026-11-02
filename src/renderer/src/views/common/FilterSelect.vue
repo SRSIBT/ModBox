@@ -2,16 +2,28 @@
   <div class="fs" ref="rootRef">
     <div class="fs__trigger" :class="{ open: isOpen }" @click="isOpen = !isOpen">
       <span>{{ currentLabel }}</span>
-      <svg class="arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-        stroke-linejoin="round">
+      <svg
+        class="arrow"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M4 6l4 4 4-4" />
       </svg>
     </div>
 
     <Transition name="fs">
       <div class="fs__panel" :class="{ 'fs__panel--up': placement === 'up' }" v-if="isOpen">
-        <div class="fs__option" v-for="opt in props.options" :key="opt.value"
-          :class="{ active: modelValue === opt.value }" @click="pick(opt.value)">
+        <div
+          class="fs__option"
+          v-for="opt in props.options"
+          :key="opt.value"
+          :class="{ active: modelValue === opt.value }"
+          @click="pick(opt.value)"
+        >
           {{ opt.label }}
         </div>
       </div>
@@ -103,8 +115,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
   border-radius: 8px;
   border: 1px solid var(--panel-border);
   background: var(--panel-bg);
-  backdrop-filter: var(--panel-blur);
-  -webkit-backdrop-filter: var(--panel-blur);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   z-index: 100;
 }

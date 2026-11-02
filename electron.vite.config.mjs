@@ -8,7 +8,6 @@ export default defineConfig({
   renderer: {
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src'),
         '@': resolve('src/renderer/src')
       }
     },
@@ -16,7 +15,9 @@ export default defineConfig({
       proxy: {
         '/api': 'http://localhost:3000',
         '/covers': 'http://localhost:3000',
-        '/backgrounds': 'http://localhost:3000'
+        '/backgrounds': 'http://localhost:3000',
+        '/builtin-covers': 'http://localhost:3000',
+        '/builtin-bg': 'http://localhost:3000'
       }
     },
     plugins: [vue()]
