@@ -127,7 +127,7 @@ export const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
-          match: 'archive',
+          match: '^archive',
           mode: 'folder',
           into: '{game_root}',
           note: 'legacy 格式 Mod 的 archive 目录，与游戏自带 archive 合并'
@@ -145,19 +145,19 @@ export const BUILTIN_GAMES = {
           note: 'ArchiveXL 的 .xl 文件与 archive 同目录'
         },
         {
-          match: 'bin',
+          match: '^bin',
           mode: 'folder',
           into: '{game_root}',
           note: 'CET / RED4ext 等框架的 bin 目录并入根'
         },
         {
-          match: 'r6',
+          match: '^r6',
           mode: 'folder',
           into: '{game_root}',
           note: 'redscript 脚本与 tweaks 配置并入 r6'
         },
         {
-          match: 'mods',
+          match: '^mods',
           mode: 'folder',
           into: '{game_root}',
           note: 'REDmod 格式的 mods 目录（含 info.json 的子文件夹）'
@@ -215,22 +215,22 @@ export const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
-          match: 'dinput8.dll',
+          match: '^dinput8.dll',
           mode: 'files',
           into: '{game_root}/Bin/Win64MasterMasterSteamPGO',
-          note: 'KCSE 脚本扩展器本体，放游戏 exe 同目录'
+          note: 'KCSE 脚本扩展器本体，只取顶层，放游戏 exe 同目录'
         },
         {
-          match: 'dinput8.pdb',
+          match: '^dinput8.pdb',
           mode: 'files',
           into: '{game_root}/Bin/Win64MasterMasterSteamPGO',
-          note: 'KCSE 调试符号'
+          note: 'KCSE 调试符号，只取顶层'
         },
         {
           match: '**/KCSE/Plugins/*.dll',
           mode: 'files',
           into: '{game_root}/KCSE/Plugins',
-          note: 'KCSE 插件 dll，统一合并到根 KCSE/Plugins/'
+          note: 'KCSE 插件 dll，从任意层级的 KCSE/Plugins/ 抽出，合并到根 KCSE/Plugins/'
         },
         {
           match: '**/KCSE/addresslib/*.bin',
@@ -329,25 +329,25 @@ export const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
-          match: 'vfs.asi',
+          match: '^vfs.asi',
           mode: 'files',
           into: '{game_root}',
           note: 'LML 的 vfs.asi 必须放 RDR2.exe 同目录'
         },
         {
-          match: 'lml.ini',
+          match: '^lml.ini',
           mode: 'files',
           into: '{game_root}',
           note: 'LML 配置放根目录'
         },
         {
-          match: 'ModManager.Core.dll',
+          match: '^ModManager.Core.dll',
           mode: 'files',
           into: '{game_root}',
           note: 'LML 核心 dll'
         },
         {
-          match: 'ModManager.NativeInterop.dll',
+          match: '^ModManager.NativeInterop.dll',
           mode: 'files',
           into: '{game_root}',
           note: 'LML 互操作 dll'
@@ -383,12 +383,6 @@ export const BUILTIN_GAMES = {
           note: '伴侣模组数据文件夹，放根目录（不要进 lml/）'
         },
         {
-          match: 'ModManager',
-          mode: 'folder',
-          into: '{game_root}',
-          note: 'RDR 模组管理器UI，丢进根目录'
-        },
-        {
           match: 'scripts',
           mode: 'folder',
           into: '{game_root}',
@@ -407,13 +401,13 @@ export const BUILTIN_GAMES = {
           note: '模组配置 ini，跟 .asi 同目录放根目录'
         },
         {
-          match: 'dinput8.dll',
+          match: '^dinput8.dll',
           mode: 'files',
           into: '{game_root}',
           note: 'ASI Loader 代理 dll，放根目录'
         },
         {
-          match: 'ScriptHookRDR2.dll',
+          match: '^ScriptHookRDR2.dll',
           mode: 'files',
           into: '{game_root}',
           note: 'ScriptHook 前置，放根目录'
@@ -473,13 +467,13 @@ export const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
-          match: 'natives',
+          match: '^natives',
           mode: 'folder',
           into: '{game_root}',
           note: '纹理/模型替换类 Mod 的 natives/ 目录并入根（合并而非替换）'
         },
         {
-          match: 'reframework',
+          match: '^reframework',
           mode: 'folder',
           into: '{game_root}',
           note: '脚本/插件类 Mod 的 reframework 目录并入根'
@@ -633,7 +627,7 @@ export const BUILTIN_GAMES = {
           {
             op: 'unlink',
             files: ['modengine.ini'],
-            note: '移除 ModEngine 的代理 dll'
+            note: '移除 ModEngine 的配置文件'
           }
         ]
       }
@@ -674,16 +668,10 @@ export const BUILTIN_GAMES = {
           note: 'CNS 本体 Content 目录，并入 SB/'
         },
         {
-          match: '~Mods',
+          match: '^~Mods',
           mode: 'folder',
           into: '{game_root}/SB/Content/Paks',
           note: '包内自带 ~Mods/ 目录时并入 Paks/'
-        },
-        {
-          match: '~mods',
-          mode: 'folder',
-          into: '{game_root}/SB/Content/Paks',
-          note: '同上，大小写变体'
         },
         {
           match: '*.pak',
@@ -719,11 +707,6 @@ export const BUILTIN_GAMES = {
             dir: 'SB/Content/Paks/~Mods',
             keepFiles: [],
             note: '清空 ~Mods/ 下全部内容'
-          },
-          {
-            op: 'purge',
-            dir: 'SB/Content/Paks/~mods',
-            note: '清空大小写变体目录（若存在）'
           }
         ]
       }
