@@ -119,7 +119,7 @@ export const useModStore = defineStore('mods', () => {
     await fetchMods()
   }
 
-  // 安装 / 卸载：真正复制文件，不再只是改 installed 字段
+  // 安装 / 卸载
   const setInstalled = async (mod, installed) => {
     const gameId = requireGameId()
     if (!gameId || !mod?.path) return null
@@ -134,12 +134,12 @@ export const useModStore = defineStore('mods', () => {
         gameId,
         modPath: mod.path
       })
-      await fetchMods()
+      await fetchMods().catch(() => { })
       return res.data
     } catch (e) {
       const message = e.response?.data?.error || e.message
       console.error(`[mods] ${installed ? '安装' : '卸载'}失败：${message}`)
-      await fetchMods()
+      await fetchMods().catch(() => { })   // ← 刷新失败别盖住 message
       throw new Error(message)
     } finally {
       const next = new Set(installingIds.value)

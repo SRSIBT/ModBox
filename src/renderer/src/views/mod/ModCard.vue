@@ -3,48 +3,24 @@
     <!-- 图标 sprite：一份定义，卡片里只引用，避免重复内联 SVG -->
     <svg class="mc-sprite" aria-hidden="true" focusable="false">
       <symbol id="mc-i-eye" viewBox="0 0 24 24">
-        <g
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
           <circle cx="12" cy="12" r="3" />
         </g>
       </symbol>
       <symbol id="mc-i-pen" viewBox="0 0 24 24">
-        <g
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 20h9" />
           <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
         </g>
       </symbol>
       <symbol id="mc-i-folder" viewBox="0 0 24 24">
-        <g
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
         </g>
       </symbol>
       <symbol id="mc-i-trash" viewBox="0 0 24 24">
-        <g
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 6h18" />
           <path d="M8 6V4h8v2" />
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
@@ -52,13 +28,7 @@
         </g>
       </symbol>
       <symbol id="mc-i-user" viewBox="0 0 24 24">
-        <g
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="8" r="3.6" />
           <path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" />
         </g>
@@ -75,29 +45,16 @@
       </symbol>
       <symbol id="mc-i-image" viewBox="0 0 1024 1024">
         <path
-          d="M903.5 135.4H120.2c-29.8 0-56 24.2-56 56v639.7c0 29.8 26.1 56 56 56h783.3c29.8 0 55.9-24.2 55.9-56V191.4c0-29.8-24.2-56-55.9-56z m0 697.6H120.2V668.9L344 452.5l231.3 229.4c9.3 11.2 26.1 9.3 39.2 1.9L717 592.4l184.6 188.4 1.9 1.9V833z m0-130.6L739.4 534.6c-9.3-9.3-26.1-11.2-37.3-1.9l-104.4 91.4-231.3-229.4c-9.3-11.2-28-13.1-39.2-3.7l-1.9 1.9-205.1 197.6V191.4h783.3v511zM707.7 415.2c31.7 0 55.9-24.2 55.9-56 0-31.7-24.2-55.9-55.9-55.9s-56 24.2-56 55.9c0 31.8 24.3 56 56 56z"
-        />
+          d="M903.5 135.4H120.2c-29.8 0-56 24.2-56 56v639.7c0 29.8 26.1 56 56 56h783.3c29.8 0 55.9-24.2 55.9-56V191.4c0-29.8-24.2-56-55.9-56z m0 697.6H120.2V668.9L344 452.5l231.3 229.4c9.3 11.2 26.1 9.3 39.2 1.9L717 592.4l184.6 188.4 1.9 1.9V833z m0-130.6L739.4 534.6c-9.3-9.3-26.1-11.2-37.3-1.9l-104.4 91.4-231.3-229.4c-9.3-11.2-28-13.1-39.2-3.7l-1.9 1.9-205.1 197.6V191.4h783.3v511zM707.7 415.2c31.7 0 55.9-24.2 55.9-56 0-31.7-24.2-55.9-55.9-55.9s-56 24.2-56 55.9c0 31.8 24.3 56 56 56z" />
       </symbol>
     </svg>
 
     <div class="mod__cards-body">
-      <draggable
-        v-if="pagedList.length !== 0"
-        v-model="dragList"
-        class="mod-grid"
-        item-key="id"
-        handle=".mc__drag"
-        ghost-class="ghost"
-        :animation="200"
-        @end="onDragEnd"
-      >
+      <draggable v-if="pagedList.length !== 0" v-model="dragList" class="mod-grid" item-key="id" handle=".mc__drag"
+        ghost-class="ghost" :animation="200" @end="onDragEnd">
         <template #item="{ element: mod }">
-          <div
-            class="mc"
-            :class="{ 'is-selected': selectedIds.has(mod.id) }"
-            @click="toggleSelect(mod.id)"
-            @contextmenu.prevent.stop="contextMenuRef.open(mod, $event)"
-          >
+          <div class="mc" :class="{ 'is-selected': selectedIds.has(mod.id) }" @click="toggleSelect(mod.id)"
+            @contextmenu.prevent.stop="contextMenuRef.open(mod, $event)">
             <span class="mc__status" :class="mod.installed ? 'is-on' : 'is-off'">
               {{ mod.installed ? '已安装' : '未安装' }}
             </span>
@@ -120,13 +77,8 @@
                 </span>
               </div>
 
-              <button
-                v-if="mod.type !== '/'"
-                type="button"
-                class="mc__type"
-                title="点击编辑模组"
-                @click.stop="handleAction('edit', mod)"
-              >
+              <button v-if="mod.type !== '/'" type="button" class="mc__type" title="点击编辑模组"
+                @click.stop="handleAction('edit', mod)">
                 {{ mod.type }}
               </button>
             </div>
@@ -144,26 +96,17 @@
                 </svg>
                 <span class="mc__author-name">{{
                   mod.author !== '/' ? mod.author : '未知作者'
-                }}</span>
+                  }}</span>
               </div>
 
               <div class="mc__meta">
-                <button
-                  v-if="mod.modId !== '/'"
-                  class="mc__tag mc__tag--id"
-                  :disabled="!mod.url"
-                  :title="mod.url ? '在 N 网打开' : '未关联 N 网页面'"
-                  @click.stop="handleAction('openNexus', mod)"
-                >
+                <button v-if="mod.modId !== '/'" class="mc__tag mc__tag--id" :disabled="!mod.url"
+                  :title="mod.url ? '在 N 网打开' : '未关联 N 网页面'" @click.stop="handleAction('openNexus', mod)">
                   ID {{ mod.modId }}
                 </button>
 
-                <button
-                  v-if="mod.version !== '/'"
-                  class="mc__tag mc__tag--ver"
-                  title="查看模组文件"
-                  @click.stop="handleAction('openFolder', mod)"
-                >
+                <button v-if="mod.version !== '/'" class="mc__tag mc__tag--ver" title="查看模组文件"
+                  @click.stop="handleAction('openFolder', mod)">
                   v{{ mod.version }}
                 </button>
 
@@ -179,26 +122,15 @@
 
             <div class="mc__foot">
               <label class="mc__switch" @click.stop>
-                <input
-                  type="checkbox"
-                  :checked="mod.installed"
-                  :disabled="installingIds.has(mod.id)"
-                  @change="toggleInstalled(mod, $event.target.checked)"
-                />
+                <input type="checkbox" :checked="mod.installed" :disabled="installingIds.has(mod.id)"
+                  @change="toggleInstalled(mod, $event.target.checked)" />
                 <span class="mc__slider"></span>
               </label>
 
               <div class="mc__actions">
-                <button
-                  v-for="action in cardActions"
-                  :key="action.type"
-                  type="button"
-                  class="mc__act"
-                  :class="{ 'is-danger': action.danger }"
-                  :title="action.title"
-                  :aria-label="action.title"
-                  @click.stop="handleAction(action.type, mod)"
-                >
+                <button v-for="action in cardActions" :key="action.type" type="button" class="mc__act"
+                  :class="{ 'is-danger': action.danger }" :title="action.title" :aria-label="action.title"
+                  @click.stop="handleAction(action.type, mod)">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <use :href="`#mc-i-${action.icon}`" />
                   </svg>
@@ -217,13 +149,8 @@
     <ContextMenu ref="contextMenuRef" @action="handleAction" />
     <ModEdit v-model:visible="editVisible" :mod="currentMod" @save="handleSaveMod" />
     <ModDetail v-model:visible="detailVisible" :mod="currentMod" />
-    <ConfirmDialog
-      :visible="deleteConfirm"
-      :title="currentMod.name"
-      :type="'mod'"
-      @confirm="onDelete"
-      @cancel="deleteConfirm = false"
-    />
+    <ConfirmDialog :visible="deleteConfirm" :title="currentMod.name" :type="'mod'" @confirm="onDelete"
+      @cancel="deleteConfirm = false" />
   </div>
 </template>
 
@@ -737,15 +664,15 @@ button.mc__tag:disabled {
   transition: transform 0.2s ease;
 }
 
-.mc__switch input:checked + .mc__slider {
+.mc__switch input:checked+.mc__slider {
   background: var(--success);
 }
 
-.mc__switch input:checked + .mc__slider::before {
+.mc__switch input:checked+.mc__slider::before {
   transform: translateX(12px);
 }
 
-.mc__switch input:focus-visible + .mc__slider {
+.mc__switch input:focus-visible+.mc__slider {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -801,6 +728,7 @@ button.mc__tag:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .mc,
   .mc__cover-inner img,
   .mc__slider::before {

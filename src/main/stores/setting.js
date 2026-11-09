@@ -5,9 +5,13 @@ import { DEFAULT_SETTINGS } from '../config/defaults.js'
 import { BUILTIN_GAMES } from '../config/builtinGames.js'
 import { BACKGROUNDS_DIR, SETTINGS_FILE } from './paths.js'
 
+// 复制一份默认配置，防止把源配置写错了
 const clone = (value) => JSON.parse(JSON.stringify(value))
+
+// 判断是否是对象
 const isObject = (value) => !!value && typeof value === 'object' && !Array.isArray(value)
 
+// 标准化表头
 const normalizeColumns = (value) => {
   if (!Array.isArray(value)) return clone(DEFAULT_SETTINGS.modColumns)
   const columns = value
@@ -19,6 +23,7 @@ const normalizeColumns = (value) => {
   return columns.length ? columns : clone(DEFAULT_SETTINGS.modColumns)
 }
 
+// 标准化游戏路径
 const normalizePaths = (value) => {
   const input = isObject(value) ? value : {}
   const result = {}
@@ -35,6 +40,7 @@ const normalizePaths = (value) => {
   return result
 }
 
+// 标准化配置
 const normalize = (raw) => {
   const input = isObject(raw) ? raw : {}
   const base = clone(DEFAULT_SETTINGS)
@@ -57,14 +63,13 @@ const normalize = (raw) => {
       )
     ),
     weather: ['none', 'rain', 'snow'].includes(input.weather) ? input.weather : base.weather,
-    minimizeToTray:
-      typeof input.minimizeToTray === 'boolean' ? input.minimizeToTray : base.minimizeToTray,
-    autoImport: typeof input.autoImport === 'boolean' ? input.autoImport : base.autoImport,
     modColumns: normalizeColumns(input.modColumns),
-    gamePaths: normalizePaths(input.gamePaths)
+    gamePaths: normalizePaths(input.gamePaths),
+    lastDialogPath: typeof input.lastDialogPath === 'string' ? input.lastDialogPath : ''
   }
 }
 
+// 获取设置
 export const readSettings = () => {
   if (!fs.existsSync(SETTINGS_FILE)) {
     const settings = normalize(null)
@@ -85,6 +90,7 @@ export const readSettings = () => {
   }
 }
 
+// 保存设置
 export const saveSettings = (patch = {}) => {
   const current = readSettings()
   const input = isObject(patch) ? patch : {}
@@ -108,15 +114,12 @@ export const saveSettings = (patch = {}) => {
   return next
 }
 
-const findCustomBackground = () => {
-  if (!fs.existsSync(BACKGROUNDS_DIR)) return null
-  return (
-    fs.readdirSync(BACKGROUNDS_DIR).find((file) => file.toLowerCase().startsWith('custom.')) || null
-  )
-}
+// 获取背景
+export const getBackground = () => {
+  const file = fs.existsSync(BACKGROUNDS_DIR)
+    ? fs.readdirSync(BACKGROUNDS_DIR).find((f) => f.toLowerCase().startsWith('custom.')) || null
+    : null
 
-export const getBackgroundState = () => {
-  const file = findCustomBackground()
   if (!file) return { hasCustom: false, url: '' }
 
   try {
@@ -127,22 +130,35 @@ export const getBackgroundState = () => {
   }
 }
 
-export const setCustomBackground = (image) => {
+// 设置背景
+export const setBackground = (image) => {
   if (!image || !fs.existsSync(image)) throw new Error('图片不存在')
   const ext = path.extname(image).toLowerCase()
   if (!ext) throw new Error('无法识别图片格式')
 
   fs.mkdirSync(BACKGROUNDS_DIR, { recursive: true })
   const target = path.join(BACKGROUNDS_DIR, `custom${ext}`)
-  const old = findCustomBackground()
-  fs.copyFileSync(image, target)
-  if (old && old !== path.basename(target)) fs.unlinkSync(path.join(BACKGROUNDS_DIR, old))
 
-  return getBackgroundState()
+  const old = fs.existsSync(BACKGROUNDS_DIR)
+    ? fs.readdirSync(BACKGROUNDS_DIR).find((f) => f.toLowerCase().startsWith('custom.')) || null
+    : null
+
+  fs.copyFileSync(image, target)
+  if (old && old !== path.basename(target)) {
+    fs.unlinkSync(path.join(BACKGROUNDS_DIR, old))
+  }
+
+  return getBackground()
 }
 
-export const removeCustomBackground = () => {
-  const file = findCustomBackground()
+// 删除背景
+export const removeBackground = () => {
+  const file = () => {
+    if (!fs.existsSync(BACKGROUNDS_DIR)) return null
+    return (
+      fs.readdirSync(BACKGROUNDS_DIR).find((file) => file.toLowerCase().startsWith('custom.')) || null
+    )
+  }
   if (file) fs.unlinkSync(path.join(BACKGROUNDS_DIR, file))
   return { hasCustom: false, url: '' }
 }

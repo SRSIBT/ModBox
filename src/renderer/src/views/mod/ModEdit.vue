@@ -10,14 +10,8 @@
         <div class="dialog__content">
           <div class="field">
             <label>封面</label>
-            <div
-              class="cover-upload"
-              :class="{ 'drag-over': isDragOver }"
-              @click="handlePickCover"
-              @dragover.prevent="isDragOver = true"
-              @dragleave="isDragOver = false"
-              @drop.prevent="onCoverDrop"
-            >
+            <div class="cover-upload" :class="{ 'drag-over': isDragOver }" @click="handlePickCover"
+              @dragover.prevent="isDragOver = true" @dragleave="isDragOver = false" @drop.prevent="onCoverDrop">
               <img :src="coverPreview || form.cover" v-if="coverPreview || form.cover" />
               <div v-else class="cover-empty">点击上传</div>
             </div>

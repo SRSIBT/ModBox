@@ -14,11 +14,6 @@ asarUnpack:
 extraResources:
   - from: src/main/resources
     to: .
-# 打包安装时由安装器写注册表，比运行时 setAsDefaultProtocolClient 更稳
-protocols:
-  - name: Nexus Mods
-    schemes:
-      - nxm
 win:
   executableName: ModBox
 nsis:
@@ -32,7 +27,6 @@ mac:
     - NSCameraUsageDescription: Application requests access to the device's camera.
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
 dmg:
   artifactName: ${name}-${version}.${ext}

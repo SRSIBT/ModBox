@@ -6,13 +6,8 @@
         <span>{{ games.length }}</span>
       </div>
       <div class="gameList__card">
-        <div
-          class="card"
-          :class="{ 'card--active': currentId === game.id }"
-          v-for="game in sortedGames"
-          :key="game.id"
-          @click="currentId = game.id"
-        >
+        <div class="card" :class="{ 'card--active': currentId === game.id }" v-for="game in sortedGames" :key="game.id"
+          @click="currentId = game.id">
           <img :src="game.cover" />
           <span class="current--actice" v-if="activeGameId === game.id">当前激活</span>
           <span>{{ game.name }}</span>
@@ -38,18 +33,12 @@
             <div class="field__sub">游戏的安装根目录，通常包含游戏的主要文件</div>
           </div>
           <div class="field__control">
-            <input
-              class="field__input"
-              v-model="gamePath"
-              type="text"
-              placeholder="请选择游戏根目录"
-            />
+            <input class="field__input" v-model="gamePath" type="text" placeholder="请选择游戏根目录" />
             <button class="field__btn" @click="handleBrowseRoot">
               <svg viewBox="0 0 1026 1024" version="1.1" p-id="7491">
                 <path
                   d="M950.857143 394.971429l-124.342857 438.857142c-7.314286 21.942857-36.571429 43.885714-58.514286 43.885715h-658.285714c-7.314286 0-14.628571 0-21.942857-7.314286 0-7.314286-7.314286-14.628571 0-21.942857l124.342857-438.857143c7.314286-21.942857 36.571429-43.885714 58.514285-43.885714h658.285715c7.314286 0 14.628571 0 14.628571 7.314285 7.314286 0 7.314286 7.314286 7.314286 21.942858zM73.142857 109.714286c0-21.942857 14.628571-36.571429 36.571429-36.571429h234.057143l65.828571 124.342857c0 14.628571 14.628571 21.942857 29.257143 21.942857h402.285714c21.942857 0 36.571429 14.628571 36.571429 36.571429V292.571429H270.628571C219.428571 292.571429 160.914286 336.457143 146.285714 394.971429L73.142857 643.657143V109.714286z m936.228572 219.428571c-14.628571-21.942857-36.571429-29.257143-58.514286-36.571428v-36.571429c0-58.514286-51.2-109.714286-109.714286-109.714286H460.8L394.971429 21.942857C394.971429 7.314286 380.342857 0 365.714286 0H109.714286C51.2 0 0 51.2 0 109.714286v731.428571c0 36.571429 21.942857 73.142857 43.885714 87.771429h7.314286c14.628571 14.628571 36.571429 21.942857 58.514286 21.942857h658.285714c58.514286 0 109.714286-43.885714 131.657143-102.4l124.342857-438.857143c7.314286-29.257143 0-58.514286-14.628571-80.457143z"
-                  p-id="7492"
-                ></path>
+                  p-id="7492"></path>
               </svg>
             </button>
           </div>
@@ -61,18 +50,12 @@
             <div class="field__sub">游戏的主执行文件(.exe)，用于启动游戏</div>
           </div>
           <div class="field__control">
-            <input
-              class="field__input"
-              v-model="gameExe"
-              type="text"
-              placeholder="请选择游戏执行程序"
-            />
+            <input class="field__input" v-model="gameExe" type="text" placeholder="请选择游戏执行程序" />
             <button class="field__btn" @click="handleBrowseExe">
               <svg viewBox="0 0 1024 1024" version="1.1" p-id="8643">
                 <path
                   d="M53.039687 176.551724 375.098244 176.551724C374.484286 176.551724 473.585858 291.710552 473.585858 291.710552 486.581177 307.112413 509.433838 317.793103 529.530968 317.793103L971.158687 317.793103C961.315964 317.793103 953.37931 309.775113 953.37931 300.309822L953.37931 882.58673C953.37931 872.955622 961.207896 865.103448 970.914322 865.103448L53.085678 865.103448C62.785907 865.103448 70.62069 872.915968 70.62069 882.765489L70.62069 158.889684C70.62069 168.590089 62.665481 176.551724 53.039687 176.551724ZM0 882.765489C0 911.963754 23.828092 935.724138 53.085678 935.724138L970.914322 935.724138C1000.258278 935.724138 1024 911.910877 1024 882.58673L1024 300.309822C1024 270.932674 1000.480803 247.172414 971.158687 247.172414L529.530968 247.172414C530.299604 247.172414 431.241728 132.013586 431.241728 132.013586 418.224358 116.585578 395.290394 105.931034 375.098244 105.931034L53.039687 105.931034C23.649986 105.931034 0 129.600124 0 158.889684L0 882.765489Z"
-                  p-id="8644"
-                ></path>
+                  p-id="8644"></path>
               </svg>
             </button>
           </div>
@@ -83,18 +66,12 @@
         <div class="rules__head">
           <div>
             <div class="rules__title">智能安装规则</div>
-            <div class="rules__sub">只读展示当前游戏的 placements，按顺序匹配游戏目录</div>
+            <div class="rules__sub">只读展示当前游戏的安装规则，按顺序匹配游戏目录</div>
           </div>
           <span class="rules__badge">{{ rulePlacements.length }} 条</span>
         </div>
 
-        <div v-if="rulesLoading" class="rules__empty">读取规则中…</div>
-
-        <div v-else-if="rulesError" class="rules__empty rules__empty--error">
-          {{ rulesError }}
-        </div>
-
-        <div v-else-if="rulePlacements.length === 0" class="rules__empty">
+        <div v-if="rulePlacements.length === 0" class="rules__empty">
           暂无特定安装规则，将尝试直接解压到游戏根目录
         </div>
 
@@ -105,32 +82,33 @@
 </template>
 
 <script setup>
-import axios from 'axios'
 import { storeToRefs } from 'pinia'
 import { useGameStore } from '@/stores/game'
 import { useSettingStore } from '@/stores/setting'
 import { useToastStore } from '@/stores/toast'
 import { ref, watch, computed, onMounted } from 'vue'
 
+const toast = useToastStore()
+
 const gameStore = useGameStore()
-const { games, currentGame, currentId } = storeToRefs(gameStore)
-const { fetchGames, updateGame, browseRoot, browseExe } = gameStore
+const { games, currentId, currentGame, rulePlacements } = storeToRefs(gameStore)
+const { fetchGames, fetchRules, updateGame, browseRoot, browseExe, detectSteamPath } = gameStore
 
 const settingStore = useSettingStore()
 const { activeGameId } = storeToRefs(settingStore)
 const { fetchSettings, saveSettings } = settingStore
-const toast = useToastStore()
 
 const gamePath = ref('') // 游戏根目录
 const gameExe = ref('') // 游戏执行文件
 const isSaving = ref(false) // 保存配置状态
-const rulePlacements = ref([]) // 当前游戏的 placements
-const rulesLoading = ref(false) // 规则读取状态
-const rulesError = ref('') // 规则读取错误
-const rulesText = computed(() => JSON.stringify(rulePlacements.value, null, 2))
 
+// 安装规则文本化
+const rulesText = computed(() => {
+  return JSON.stringify(rulePlacements.value, null, 2)
+})
+
+// 当前选中的游戏，是不是"已激活"的
 const isActive = computed(() => {
-  // 当前选中的游戏，是不是"已激活"的
   return !!activeGameId.value && activeGameId.value === currentGame.value?.id
 })
 
@@ -154,7 +132,7 @@ const handleActivate = async () => {
     await saveSettings()
   } else {
     // 已经是激活的，跳模组管理
-    emit('change-menu', 'modGanage')
+    emit('change-menu', 'mod')
   }
 }
 
@@ -186,46 +164,34 @@ const handleSave = async () => {
   }
 }
 
-// 读取当前游戏的安装规则，只读展示
-const fetchRules = async (gameId) => {
-  if (!gameId) {
-    rulePlacements.value = []
-    rulesError.value = ''
-    rulesLoading.value = false
-    return
-  }
-
-  const requestId = gameId
-  rulesLoading.value = true
-  rulesError.value = ''
-
-  try {
-    const res = await axios.get('/api/mods/rules', { params: { gameId } })
-    if (currentGame.value?.id !== requestId) return
-
-    rulePlacements.value = Array.isArray(res.data.placements) ? res.data.placements : []
-  } catch (e) {
-    if (currentGame.value?.id !== requestId) return
-
-    rulePlacements.value = []
-    rulesError.value = e.response?.data?.error || e.message || '安装规则读取失败'
-  } finally {
-    if (currentGame.value?.id === requestId) rulesLoading.value = false
-  }
-}
-
-// 实时显示游戏路径信息
-watch(currentGame, (game) => {
+watch(currentGame, async (game) => {
   gamePath.value = game?.rootPath || ''
   gameExe.value = game?.exePath || ''
   fetchRules(game?.id)
+
+  // 路径为空且有 steamAppId 时，自动检测并保存
+  if (!game?.rootPath && game?.steamAppId) {
+    const id = game.id
+    const detected = await detectSteamPath(game.steamAppId)
+
+    // 切走了就别写了，防止旧请求覆盖新游戏
+    if (!detected || currentGame.value?.id !== id) return
+
+    gamePath.value = detected
+
+    // 配了 exeRelative 就一起填，没配就留空手动选
+    if (game?.exeRelative) {
+      gameExe.value = `${detected}\\${game.exeRelative.replace(/\//g, '\\')}`
+    }
+
+    await updateGame(gamePath.value, gameExe.value)
+  }
 })
 
 onMounted(async () => {
   await fetchGames()
   await fetchSettings()
   currentId.value = activeGameId.value || ''
-  await fetchRules(currentGame.value?.id)
 })
 </script>
 

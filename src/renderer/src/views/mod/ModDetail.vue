@@ -14,8 +14,7 @@
               <svg v-else viewBox="0 0 1024 1024" version="1.1" p-id="2826">
                 <path
                   d="M903.5 135.4H120.2c-29.8 0-56 24.2-56 56v639.7c0 29.8 26.1 56 56 56h783.3c29.8 0 55.9-24.2 55.9-56V191.4c0-29.8-24.2-56-55.9-56z m0 697.6H120.2V668.9L344 452.5l231.3 229.4c9.3 11.2 26.1 9.3 39.2 1.9L717 592.4l184.6 188.4 1.9 1.9V833z m0-130.6L739.4 534.6c-9.3-9.3-26.1-11.2-37.3-1.9l-104.4 91.4-231.3-229.4c-9.3-11.2-28-13.1-39.2-3.7l-1.9 1.9-205.1 197.6V191.4h783.3v511zM707.7 415.2c31.7 0 55.9-24.2 55.9-56 0-31.7-24.2-55.9-55.9-55.9s-56 24.2-56 55.9c0 31.8 24.3 56 56 56z m0 0"
-                  p-id="2827"
-                ></path>
+                  p-id="2827"></path>
               </svg>
             </div>
 
@@ -62,22 +61,11 @@
   </Transition>
 
   <Teleport to="body">
-    <div
-      class="preview"
-      v-if="previewVisible"
-      @click="onPreviewClick"
-      @contextmenu.prevent="previewVisible = false"
-      @wheel.prevent="onPreviewWheel"
-      @mousedown="onPreviewDown"
-      @mousemove="onPreviewMove"
-      @mouseup="onPreviewUp"
-      @mouseleave="onPreviewUp"
-    >
-      <img
-        :src="mod?.cover"
-        draggable="false"
-        :style="{ transform: `translate(${previewX}px, ${previewY}px) scale(${previewScale})` }"
-      />
+    <div class="preview" v-if="previewVisible" @click="onPreviewClick" @contextmenu.prevent="previewVisible = false"
+      @wheel.prevent="onPreviewWheel" @mousedown="onPreviewDown" @mousemove="onPreviewMove" @mouseup="onPreviewUp"
+      @mouseleave="onPreviewUp">
+      <img :src="mod?.cover" draggable="false"
+        :style="{ transform: `translate(${previewX}px, ${previewY}px) scale(${previewScale})` }" />
     </div>
   </Teleport>
 </template>

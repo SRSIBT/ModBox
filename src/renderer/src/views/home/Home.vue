@@ -16,22 +16,25 @@
       </div>
       <div class="clock-date">{{ currentDate }}</div>
     </div>
+
+    <!-- 右下角版本号 -->
+    <div class="version">v{{ appInfo.version }}</div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useSettingStore } from '@/stores/setting'
+import { storeToRefs } from 'pinia'
 
 const settingStore = useSettingStore()
-const { fetchSettings } = settingStore
+const { appInfo } = storeToRefs(settingStore)
 
 // 定义时间对象
-const currentTime = ref({ hour: '00', minute: '00', seconds: '00' })
 const currentDate = ref('')
+const currentTime = ref({ hour: '00', minute: '00', seconds: '00' })
 
 let timer = null
-
 function updateTime() {
   const now = new Date()
   currentTime.value = {
@@ -44,14 +47,13 @@ function updateTime() {
   currentDate.value = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} · 星期${weekDays[now.getDay()]}`
 }
 
-onMounted(async () => {
+onMounted(() => {
   updateTime()
-  timer = setInterval(updateTime, 1000) // 这里给 timer 赋值了，不会再报错
-  await fetchSettings()
+  timer = setInterval(updateTime, 1000)
 })
 
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer) // 卸载时清理定时器
+  if (timer) clearInterval(timer)
 })
 </script>
 
@@ -91,9 +93,6 @@ onBeforeUnmount(() => {
 }
 
 .gradient-text {
-  font-size: 46px;
-  font-weight: 900;
-  letter-spacing: 4px;
   background: linear-gradient(90deg, var(--accent), #ffffff, var(--accent));
   background-size: 200% auto;
   color: transparent;
@@ -131,7 +130,6 @@ onBeforeUnmount(() => {
   font-weight: 900;
   letter-spacing: 2px;
   line-height: 1;
-  color: #fff;
 }
 
 .clock-colon {
@@ -140,10 +138,12 @@ onBeforeUnmount(() => {
 }
 
 @keyframes blink {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.2;
   }
@@ -160,5 +160,13 @@ onBeforeUnmount(() => {
   font-size: 18px;
   font-weight: 500;
   opacity: 0.9;
+}
+
+.version {
+  position: absolute;
+  bottom: 6px;
+  right: 12px;
+  font-size: 12px;
+  color: #fff;
 }
 </style>

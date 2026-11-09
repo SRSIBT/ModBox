@@ -4,23 +4,17 @@
     <canvas ref="weatherCanvas" class="global-weather"></canvas>
 
     <!-- 标题栏 -->
-    <TitleBar class="app-titlebar" />
+    <TitleBar />
 
     <!-- 主体 -->
     <div class="app-main">
       <!-- 左侧导航 -->
-      <aside class="app-sidebar">
-        <NavBar :active="activeMenu" @change="activeMenu = $event" />
-      </aside>
+      <NavBar :active="activeMenu" @change="activeMenu = $event" />
 
       <!-- 右侧内容 -->
-      <main class="app-content">
-        <Transition name="dialog" mode="out-in">
-          <KeepAlive>
-            <component :is="views" :key="views?.name || views" @change-menu="activeMenu = $event" />
-          </KeepAlive>
-        </Transition>
-      </main>
+      <Transition name="dialog" mode="out-in">
+        <component :is="views" :key="views?.name || views" @change-menu="activeMenu = $event" />
+      </Transition>
     </div>
 
     <!-- 提示框 -->
@@ -29,20 +23,16 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSettingStore } from '@/stores/setting'
-import { useDownloadStore } from '@/stores/download'
-import { useToastStore } from '@/stores/toast'
-import { useWeather } from '@/stores/useWeather'
+import { useWeather } from '@/stores/weather'
 import Toast from './views/common/Toast.vue'
 import TitleBar from './views/TitleBar.vue'
 import NavBar from './views/NavBar.vue'
 import Home from './views/home/Home.vue'
 import Game from './views/game/Game.vue'
-import ModGanage from './views/mod/Mods.vue'
-import ModDownload from './views/download/ModDownload.vue'
-import DownloadList from './views/download/DownloadList.vue'
+import Mod from './views/mod/Mods.vue'
 import Setting from './views/setting/Setting.vue'
 
 const activeMenu = ref('home')
@@ -50,9 +40,7 @@ const weatherCanvas = ref(null)
 const menus = [
   { key: 'home', views: Home },
   { key: 'game', views: Game },
-  { key: 'modGanage', views: ModGanage },
-  { key: 'modDownload', views: ModDownload },
-  { key: 'downloadList', views: DownloadList },
+  { key: 'mod', views: Mod },
   { key: 'setting', views: Setting }
 ]
 
@@ -60,29 +48,15 @@ const views = computed(() => {
   return menus.find((m) => m.key === activeMenu.value)?.views
 })
 
-const downloadStore = useDownloadStore()
-const { focusRequest } = storeToRefs(downloadStore)
-const toast = useToastStore()
-downloadStore.initBridge()
-
-// 下载/解析类提示统一从顶部弹出，页面切走也能看到
-watch(
-  () => downloadStore.notice,
-  (notice) => {
-    if (notice?.message) toast.show(notice.message, notice.level || 'info')
-  },
-  { deep: true, immediate: true }
-)
-
 const settingStore = useSettingStore()
 const { weather } = storeToRefs(settingStore)
+const { fetchSettings } = settingStore
 
 // 全局天气特效
 useWeather(weatherCanvas, weather)
 
-// 收到 nxm 链接时自动切到下载列表
-watch(focusRequest, () => {
-  activeMenu.value = 'downloadList'
+onMounted(() => {
+  fetchSettings()
 })
 </script>
 
@@ -122,13 +96,6 @@ body,
   pointer-events: none;
 }
 
-/*------------------- 标题栏 -------------------*/
-.app-titlebar {
-  position: relative;
-  z-index: 10;
-  flex: 0 0 auto;
-}
-
 /*------------------- 主体 -------------------*/
 .app-main {
   position: relative;
@@ -137,30 +104,6 @@ body,
   min-height: 0;
   display: flex;
   overflow: hidden;
-}
-
-/* 左侧导航 */
-.app-sidebar {
-  flex: 0 0 auto;
-  height: 100%;
-  display: flex;
-  overflow: hidden;
-}
-
-/* 右侧内容 */
-.app-content {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  overflow: hidden;
-}
-
-/* 各页面根节点 */
-.app-content>* {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
 }
 
 /*------------------- 通用样式类 -------------------*/
@@ -222,7 +165,6 @@ body,
   /* 交互 */
   --bg-hover: #0000001f;
   --accent: #03974f;
-  --bg-overlay-opacity: 0.55;
 
   /* 状态语义色 */
   --success: #03974f;

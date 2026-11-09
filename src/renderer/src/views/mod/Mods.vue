@@ -8,24 +8,12 @@
           <svg viewBox="0 0 1024 1024" version="1.1" p-id="2573">
             <path
               d="M882.734114 459.147258l0.024559-0.024559L244.016061 21.12718l-0.199545 0.188288C230.582097 8.748245 212.62819 1.014096 192.840518 1.014096c-40.704051 0-73.699536 32.66905-73.699536 72.996524 0 22.148439-0.954745 65.513086 0 64.572668l0 373.422851 0 393.071354c0 0.325411 0 25.249057 0 44.935422 0 40.302915 32.995485 72.972988 73.699536 72.972988 19.862373 0 37.892005-7.78429 51.125401-20.466124l0.050142 0.025583 638.742613-437.982216-0.024559-0.038886c13.886265-13.270235 22.549575-31.889291 22.549575-52.531424 0-0.050142 0-0.088004 0-0.150426 0-0.050142 0-0.11154 0-0.149403C905.28369 491.048829 896.620379 472.41647 882.734114 459.147258z"
-              p-id="2574"
-              fill="#C1FFCB"
-            ></path>
+              p-id="2574" fill="#C1FFCB"></path>
           </svg>
           <span>开始游戏</span>
         </button>
-        <button
-          class="title-btn title-btn--clean"
-          title="卸载全部 Mod，并清理游戏目录里的残留"
-          @click="cleanupConfirm = true"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          >
+        <button class="title-btn title-btn--clean" title="卸载全部 Mod，并清理游戏目录里的残留" @click="cleanupConfirm = true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
             <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" />
             <path d="M10 11v5M14 11v5" />
           </svg>
@@ -35,9 +23,7 @@
           <svg viewBox="0 0 1026 1024" version="1.1" p-id="7491">
             <path
               d="M950.857143 394.971429l-124.342857 438.857142c-7.314286 21.942857-36.571429 43.885714-58.514286 43.885715h-658.285714c-7.314286 0-14.628571 0-21.942857-7.314286 0-7.314286-7.314286-14.628571 0-21.942857l124.342857-438.857143c7.314286-21.942857 36.571429-43.885714 58.514285-43.885714h658.285715c7.314286 0 14.628571 0 14.628571 7.314285 7.314286 0 7.314286 7.314286 7.314286 21.942858zM73.142857 109.714286c0-21.942857 14.628571-36.571429 36.571429-36.571429h234.057143l65.828571 124.342857c0 14.628571 14.628571 21.942857 29.257143 21.942857h402.285714c21.942857 0 36.571429 14.628571 36.571429 36.571429V292.571429H270.628571C219.428571 292.571429 160.914286 336.457143 146.285714 394.971429L73.142857 643.657143V109.714286z m936.228572 219.428571c-14.628571-21.942857-36.571429-29.257143-58.514286-36.571428v-36.571429c0-58.514286-51.2-109.714286-109.714286-109.714286H460.8L394.971429 21.942857C394.971429 7.314286 380.342857 0 365.714286 0H109.714286C51.2 0 0 51.2 0 109.714286v731.428571c0 36.571429 21.942857 73.142857 43.885714 87.771429h7.314286c14.628571 14.628571 36.571429 21.942857 58.514286 21.942857h658.285714c58.514286 0 109.714286-43.885714 131.657143-102.4l124.342857-438.857143c7.314286-29.257143 0-58.514286-14.628571-80.457143z"
-              p-id="7492"
-              fill="#FF9800"
-            ></path>
+              p-id="7492" fill="#FF9800"></path>
           </svg>
           <span>游戏根目录</span>
         </button>
@@ -76,30 +62,15 @@
     <ModUpload />
 
     <!-- 批量修改 -->
-    <BatchEdit
-      v-model:visible="batchEditVisible"
-      :mode="batchMode"
-      :mods="selectedMods"
-      @save="handleBatchSave"
-    />
+    <BatchEdit v-model:visible="batchEditVisible" :mode="batchMode" :mods="selectedMods" @save="handleBatchSave" />
 
     <!-- 批量删除 -->
-    <ConfirmDialog
-      v-model:visible="batchDeleteConfirm"
-      :title="selectedIds.size"
-      :type="'mods'"
-      @confirm="handleBatchSave({ mode: 'delete' })"
-      @cancel="batchDeleteConfirm = false"
-    />
+    <ConfirmDialog v-model:visible="batchDeleteConfirm" :title="selectedIds.size" :type="'mods'"
+      @confirm="handleBatchSave({ mode: 'delete' })" @cancel="batchDeleteConfirm = false" />
 
     <!-- 一键清理 -->
-    <ConfirmDialog
-      v-model:visible="cleanupConfirm"
-      title="一键清理"
-      message="确定卸载全部 Mod 并清理游戏目录里的 Mod 残留吗？Steam 游戏源文件不会被修复。"
-      @confirm="handleCleanup"
-      @cancel="cleanupConfirm = false"
-    />
+    <ConfirmDialog v-model:visible="cleanupConfirm" title="一键清理" message="确定卸载全部 Mod 并清理游戏目录里的 Mod 残留吗？"
+      @confirm="handleCleanup" @cancel="cleanupConfirm = false" />
   </div>
 </template>
 
@@ -119,26 +90,8 @@ import BatchEdit from './BatchEdit.vue'
 import ConfirmDialog from '../common/ConfirmDialog.vue'
 
 const modStore = useModStore()
-const {
-  modList,
-  filteredList,
-  page,
-  pageSize,
-  filter,
-  selectedIds,
-  totalCount,
-  installedCount,
-  uninstalledCount
-} = storeToRefs(modStore)
-const {
-  fetchMods,
-  updateMod,
-  deleteMod,
-  cleanupMods,
-  setInstalledBatch,
-  openGameFolder,
-  launchGame
-} = modStore
+const { modList, filteredList, page, pageSize, filter, selectedIds, totalCount, installedCount, uninstalledCount } = storeToRefs(modStore)
+const { fetchMods, updateMod, deleteMod, cleanupMods, setInstalledBatch, openGameFolder, launchGame } = modStore
 const toast = useToastStore()
 
 const gameStore = useGameStore()
@@ -148,14 +101,16 @@ const { fetchGames } = gameStore
 const settingStore = useSettingStore()
 const { viewMode } = storeToRefs(settingStore)
 
+const isDeleting = ref(false) // 批量删除进行中，防重复点击
 const batchMode = ref('group') // 批量操作模式
+const cleanupConfirm = ref(false) // 一键清理确认
 const batchEditVisible = ref(false) // 批量修改界面显示
 const batchDeleteConfirm = ref(false) // 批量删除界面显示
-const cleanupConfirm = ref(false) // 一键清理确认
-const selectedMods = computed(
-  // 多选模组列表
-  () => modList.value.filter((m) => selectedIds.value.has(m.id))
-)
+
+// 多选模组列表
+const selectedMods = computed(() => {
+  return modList.value.filter((m) => selectedIds.value.has(m.id))
+})
 
 // 启动游戏
 const handleLaunchGame = async () => {
@@ -229,22 +184,28 @@ const handleBatchAction = async (action) => {
 
 // 批量保存
 const handleBatchSave = async ({ mode, value }) => {
-  const targets = modList.value.filter((m) => selectedIds.value.has(m.id))
+  const targets = selectedMods.value
 
   if (mode === 'delete') {
-    const failures = []
-    for (const m of targets) {
-      try {
-        await deleteMod(m)
-      } catch (e) {
-        failures.push(`${m.name}：${e.response?.data?.error || e.message}`)
+    if (isDeleting.value) return
+    isDeleting.value = true
+    try {
+      const failures = []
+      for (const m of targets) {
+        try {
+          await deleteMod(m)
+        } catch (e) {
+          failures.push(`${m.name}：${e.response?.data?.error || e.message}`)
+        }
       }
-    }
-    batchDeleteConfirm.value = false
-    if (failures.length) {
-      toast.error(`${failures.length} 个模组删除失败：${failures.join('；')}`)
-    } else {
-      toast.success('已删除选中的模组')
+      batchDeleteConfirm.value = false
+      if (failures.length) {
+        toast.error(`${failures.length} 个模组删除失败：${failures.join('；')}`)
+      } else {
+        toast.success('已删除选中的模组')
+      }
+    } finally {
+      isDeleting.value = false
     }
     return
   }
@@ -314,7 +275,7 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 
-.mod__title > span:nth-child(1) {
+.mod__title>span:nth-child(1) {
   font-size: 16px;
   font-weight: 500;
   color: var(--text);

@@ -21,11 +21,7 @@
 
           <div class="field">
             <label>{{ mode === 'group' ? '分组' : '类型' }}</label>
-            <input
-              v-model="value"
-              type="text"
-              :placeholder="`请输入要修改的${mode === 'group' ? '分组' : '类型'}`"
-            />
+            <input v-model="value" type="text" :placeholder="`请输入要修改的${mode === 'group' ? '分组' : '类型'}`" />
           </div>
         </div>
 

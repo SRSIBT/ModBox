@@ -7,13 +7,12 @@ import { getGame, getGames, saveGamePaths } from '../stores/game.js'
 
 const router = express.Router()
 
-// 获取游戏列表：
-// BUILTIN_GAMES 打底，再由 settings.json 的 gamePaths 合并用户真实路径。
+// 获取游戏列表
 router.get('/games', (req, res) => {
   res.json({ games: getGames() })
 })
 
-// 保存游戏路径：只写 settings.json 的 gamePaths，不碰 mods.json
+// 保存游戏路径
 router.post('/game', (req, res) => {
   const { id, rootPath, exePath } = req.body || {}
   const paths = {}

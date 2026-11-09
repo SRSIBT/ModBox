@@ -10,7 +10,6 @@ export const REPO_DIR = path.join(DATA_DIR, 'repo') // 游戏仓库路径
 export const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json') // 设置文件路径
 export const NOTICE_STATE_FILE = path.join(DATA_DIR, 'notice-state.json') // 公告已读状态
 export const BACKGROUNDS_DIR = path.join(DATA_DIR, 'backgrounds') // 背景图仓库路径
-export const DOWNLOADS_DIR = path.join(DATA_DIR, 'downloads') // nxm 下载落盘目录（只存压缩包，不解压）
 
 // 内置静态资源：开发时读源码目录，打包后由 extraResources 放到 resources 根目录
 export const BUILTIN_RESOURCES_DIR = app.isPackaged

@@ -1,14 +1,11 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import { app } from 'electron'
-import { execFile, spawn } from 'child_process'
+import { execFile } from 'child_process'
 import unzipper from 'unzipper'
-import { createMod, saveGameMods } from './mod.js'
+import { saveGameMods } from './mod.js'
 import { getGame } from './game.js'
-import { isInside, readJson, sanitizeFileName, writeJson } from './file.js'
-import { readSettings } from './setting.js'
-import { REPO_DIR } from './paths.js'
+import { isInside, readJson, writeJson } from './file.js'
 
 // ============================================================
 // 最简安装器：builtinGames.js 的 installRules -> 复制文件 -> .bak 备份 -> manifest.json
@@ -207,6 +204,11 @@ const matchPath = (pattern, relPath) => {
     .replace(/\\/g, '/')
     .replace(/^\.?\//, '')
   if (!glob) return false
+
+  // ^ 前缀：去掉 ^，用完整 relPath 精确匹配（只匹配顶层）
+  if (glob.startsWith('^')) {
+    return globToRegExp(glob.slice(1)).test(relPath)
+  }
 
   if (glob.includes('/')) return globToRegExp(glob).test(relPath)
 
@@ -736,6 +738,7 @@ export async function uninstallMod({ repoDir, gameId, modPath, skipProcessCheck 
     if (!fs.existsSync(target)) continue
     try {
       if (fs.statSync(target).isFile()) {
+        fs.chmodSync(target, 0o666)   // ← 加这行，去只读
         fs.rmSync(target, { force: true, maxRetries: 2, retryDelay: 200 })
         removed++
       }
@@ -843,62 +846,65 @@ export async function cleanupGameMods({ repoDir, gameId }) {
     failed.push(e.message)
   }
 
+  // 按 installRules.cleanup.actions 执行目录级/文件级清理
+  try {
+    const { rules } = readRules(repoDir, gameId)
+    const actions = rules?.cleanup?.actions || []
+    for (const action of actions) {
+      if (action.op === 'purge') {
+        const dir = path.join(gameRoot, action.dir)
+        if (fs.existsSync(dir)) purgeDir(dir, action, failed)
+      } else if (action.op === 'unlink') {
+        for (const file of action.files || []) {
+          const full = path.join(gameRoot, file)
+          if (fs.existsSync(full)) {
+            try { fs.unlinkSync(full) } catch (e) { failed.push(`${file}：${e.message}`) }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    failed.push(`cleanup.actions：${e.message}`)
+  }
+
   removeCreatedDirs(createdDirs)
   return { removed, restored, failed }
 }
 
-// 下载完成后按设置自动解压到模组库
-export async function importDownloaded(task) {
-  if (!readSettings().autoImport) return null
 
-  const file = task?._finalPath || ''
-  if (!file || !fs.existsSync(file)) return null
-  if (!['.zip', '.7z', '.rar'].includes(path.extname(file).toLowerCase())) return null
-
-  const game = getGame(task.gameId)
-  if (!game) return null
-
-  const name = cleanName(path.basename(file))
-  const folder = sanitizeFileName(name)
-  const dest = path.join(REPO_DIR, task.gameId, 'mods', folder)
-
-  fs.mkdirSync(dest, { recursive: true })
-  const sevenZip = find7Zip()
-  if (sevenZip) {
-    await run(sevenZip, ['x', file, `-o${dest}`, '-y'])
-  } else {
-    await run('tar.exe', ['-xf', file, '-C', dest])
-  }
-
-  const mods = game.mods || []
-  const id = mods.length ? Math.max(...mods.map((m) => Number(m.id) || 0)) + 1 : 1
-  mods.push(createMod({ id, name, path: folder, modId: task.modId }))
-  saveGameMods(task.gameId, mods)
-
-  return { name, folder }
-}
-
-const run = (cmd, args) =>
-  new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { windowsHide: true, stdio: 'ignore' })
-    child.on('error', reject)
-    child.on('exit', (code) => {
-      if (code === 0) resolve()
-      else reject(new Error(`${path.basename(cmd)} 退出码 ${code}`))
+function purgeDir(dir, action, failed) {
+  const keepFiles = action.keepFiles || []
+  const keepDirs = action.keepDirs || []
+  const match = (name, patterns) =>
+    patterns.some((p) => {
+      const re = new RegExp('^' + p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i')
+      return re.test(name)
     })
-  })
+  const walk = (current) => {
+    let entries
+    try { entries = fs.readdirSync(current, { withFileTypes: true }) } catch (e) {
+      failed.push(`${current}：${e.message}`); return
+    }
+    for (const entry of entries) {
+      const full = path.join(current, entry.name)
+      if (entry.isDirectory()) {
+        if (match(entry.name, keepDirs)) continue
+        walk(full)
+        try { if (fs.readdirSync(full).length === 0) fs.rmdirSync(full) } catch { }
+      } else {
+        if (match(entry.name, keepFiles)) continue
+        try {
+          fs.chmodSync(full, 0o666)
+          fs.unlinkSync(full)
+        } catch (e) {
+          failed.push(`${full}：${e.message}`)
+        }
+      }
+    }
+  }
+  walk(dir)
 
-const find7Zip = () => {
-  const candidates = [
-    path.join(process.resourcesPath || '', '7zip', '7z.exe'),
-    path.join(app.getAppPath(), 'src', 'main', 'resources', '7zip', '7z.exe'),
-    path.join(process.cwd(), 'src', 'main', 'resources', '7zip', '7z.exe')
-  ]
-  return candidates.find((item) => item && fs.existsSync(item)) || ''
-}
-
-const cleanName = (fileName) => {
-  let base = String(fileName).replace(/\.[^./\\]+$/, '')
-  base = base.replace(/[-_\s]+\d+([-_.]\d+){2,}$/u, '')
-  return base.trim() || String(fileName)
+  try {
+    if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir)
+  } catch { }
 }

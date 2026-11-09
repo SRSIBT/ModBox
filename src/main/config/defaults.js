@@ -1,7 +1,7 @@
 // 软件默认设置。
 // 所有用户可配置项都放这里；settings.json 缺失、为空或损坏时用它兜底并重建。
-// gamePaths 只存路径，游戏名称/Steam ID/Nexus 域名/安装规则都在 builtinGames.js。
-// 新模组入库时的默认字段，导入和自动导入共用
+
+// 新模组入库时的默认字段
 export const DEFAULT_MOD = {
   cover: '',
   modId: '/',
@@ -21,10 +21,7 @@ export const DEFAULT_SETTINGS = {
   background: 'default',
   backgroundOpacity: 50,
   weather: 'none',
-  minimizeToTray: false,
-
-  // 下载列表上的开关：下完自动解压进模组库
-  autoImport: false,
+  lastDialogPath: '',
 
   // 表头宽度；label 由前端维护，这里只持久化 key + width
   modColumns: [

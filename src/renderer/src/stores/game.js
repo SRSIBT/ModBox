@@ -6,6 +6,7 @@ import axios from 'axios'
 export const useGameStore = defineStore('games', () => {
   const games = ref([]) // 游戏列表
   const currentId = ref('') // 当前选中游戏ID
+  const rulePlacements = ref([]) // 当前游戏的安装规则
   const settingStore = useSettingStore() // 设置store
 
   // 当前选中游戏，用当前选中游戏ID查找
@@ -53,15 +54,47 @@ export const useGameStore = defineStore('games', () => {
     return res.data.path || ''
   }
 
+  // 读取当前游戏的安装规则，只读展示
+  const fetchRules = async (gameId) => {
+    if (!gameId) {
+      rulePlacements.value = []
+      return
+    }
+
+    try {
+      const res = await axios.get('/api/mods/rules', { params: { gameId } })
+      if (currentGame.value?.id !== gameId) return
+
+      rulePlacements.value = Array.isArray(res.data.placements) ? res.data.placements : []
+    } catch {
+      if (currentGame.value?.id !== gameId) return
+      rulePlacements.value = []
+    }
+  }
+
+  // 自动获取游戏路径
+  const detectSteamPath = async (appId) => {
+    if (!appId) return null
+    try {
+      const res = await axios.get('/api/game/steam-path', { params: { appId } })
+      return res.data.success ? res.data.path : null
+    } catch {
+      return null
+    }
+  }
+
   return {
     games,
     currentId,
     currentGame,
     activeGame,
+    rulePlacements,
 
     fetchGames,
+    fetchRules,
     updateGame,
     browseRoot,
-    browseExe
+    browseExe,
+    detectSteamPath
   }
 })

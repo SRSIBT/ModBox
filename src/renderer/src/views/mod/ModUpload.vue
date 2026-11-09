@@ -5,8 +5,7 @@
         <svg viewBox="0 0 1024 1024" version="1.1" p-id="4915">
           <path
             d="M153.6 902.656a32.256 32.256 0 0 1 0-64h716.8a32.256 32.256 0 0 1 0 64z m390.656-665.6v494.592a32.256 32.256 0 0 1-64 0V237.056L236.032 481.28a31.744 31.744 0 1 1-45.056-45.056l294.912-295.424a36.864 36.864 0 0 1 51.2 0l294.912 294.912a31.744 31.744 0 0 1-45.056 45.056z"
-            p-id="4916"
-          ></path>
+            p-id="4916"></path>
         </svg>
         <span>模组上传</span>
       </div>
@@ -15,52 +14,29 @@
         <svg viewBox="0 0 1024 1024" version="1.1" p-id="4894">
           <path
             d="M970.666667 213.333333H546.586667a10.573333 10.573333 0 0 1-7.54-3.126666L429.793333 100.953333A52.986667 52.986667 0 0 0 392.08 85.333333H96a53.393333 53.393333 0 0 0-53.333333 53.333334v704a53.393333 53.393333 0 0 0 53.333333 53.333333h874.666667a53.393333 53.393333 0 0 0 53.333333-53.333333V266.666667a53.393333 53.393333 0 0 0-53.333333-53.333334z m10.666666 629.333334a10.666667 10.666667 0 0 1-10.666666 10.666666H96a10.666667 10.666667 0 0 1-10.666667-10.666666V138.666667a10.666667 10.666667 0 0 1 10.666667-10.666667h296.08a10.573333 10.573333 0 0 1 7.54 3.126667l109.253333 109.253333A52.986667 52.986667 0 0 0 546.586667 256H970.666667a10.666667 10.666667 0 0 1 10.666666 10.666667z m-298.666666-309.333334a21.333333 21.333333 0 0 1-21.333334 21.333334H554.666667v106.666666a21.333333 21.333333 0 0 1-42.666667 0V554.666667H405.333333a21.333333 21.333333 0 0 1 0-42.666667h106.666667V405.333333a21.333333 21.333333 0 0 1 42.666667 0v106.666667h106.666666a21.333333 21.333333 0 0 1 21.333334 21.333333z"
-            p-id="4895"
-          ></path>
+            p-id="4895"></path>
         </svg>
         <span>文件夹/压缩包批量导入</span>
       </button>
 
-      <svg
-        class="close"
-        :class="{ open: !uploadOpen }"
-        viewBox="0 0 16 16"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        @click.stop="uploadOpen = false"
-      >
+      <svg class="close" :class="{ open: !uploadOpen }" viewBox="0 0 16 16" stroke-width="1.5" stroke-linecap="round"
+        stroke-linejoin="round" @click.stop="uploadOpen = false">
         <path d="M4 6l4 4 4-4"></path>
       </svg>
     </div>
 
     <Transition name="upload">
-      <div
-        v-if="uploadOpen"
-        class="upload-file"
-        :class="{ 'drag-over': isDragOver }"
-        @click="importMods()"
-        @dragover.prevent="isDragOver = true"
-        @dragleave="onDragLeave"
-        @drop.prevent="handleInlineDrop"
-      >
-        <svg
-          v-if="!isDragOver"
-          class="icon-default"
-          viewBox="0 0 1024 1024"
-          version="1.1"
-          p-id="4894"
-        >
+      <div v-if="uploadOpen" class="upload-file" :class="{ 'drag-over': isDragOver }" @click="handleImport"
+        @dragover.prevent="isDragOver = true" @dragleave="onDragLeave" @drop.prevent="handleInlineDrop">
+        <svg v-if="!isDragOver" class="icon-default" viewBox="0 0 1024 1024" version="1.1" p-id="4894">
           <path
             d="M970.666667 213.333333H546.586667a10.573333 10.573333 0 0 1-7.54-3.126666L429.793333 100.953333A52.986667 52.986667 0 0 0 392.08 85.333333H96a53.393333 53.393333 0 0 0-53.333333 53.333334v704a53.393333 53.393333 0 0 0 53.333333 53.333333h874.666667a53.393333 53.393333 0 0 0 53.333333-53.333333V266.666667a53.393333 53.393333 0 0 0-53.333333-53.333334z m10.666666 629.333334a10.666667 10.666667 0 0 1-10.666666 10.666666H96a10.666667 10.666667 0 0 1-10.666667-10.666666V138.666667a10.666667 10.666667 0 0 1 10.666667-10.666667h296.08a10.573333 10.573333 0 0 1 7.54 3.126667l109.253333 109.253333A52.986667 52.986667 0 0 0 546.586667 256H970.666667a10.666667 10.666667 0 0 1 10.666666 10.666667z m-298.666666-309.333334a21.333333 21.333333 0 0 1-21.333334 21.333334H554.666667v106.666666a21.333333 21.333333 0 0 1-42.666667 0V554.666667H405.333333a21.333333 21.333333 0 0 1 0-42.666667h106.666667V405.333333a21.333333 21.333333 0 0 1 42.666667 0v106.666667h106.666666a21.333333 21.333333 0 0 1 21.333334 21.333333z"
-            p-id="4895"
-          ></path>
+            p-id="4895"></path>
         </svg>
         <svg v-else class="icon-drag" viewBox="0 0 1024 1024" version="1.1" p-id="4915">
           <path
             d="M153.6 902.656a32.256 32.256 0 0 1 0-64h716.8a32.256 32.256 0 0 1 0 64z m390.656-665.6v494.592a32.256 32.256 0 0 1-64 0V237.056L236.032 481.28a31.744 31.744 0 1 1-45.056-45.056l294.912-295.424a36.864 36.864 0 0 1 51.2 0l294.912 294.912a31.744 31.744 0 0 1-45.056 45.056z"
-            p-id="4916"
-          ></path>
+            p-id="4916"></path>
         </svg>
         <span>{{
           isDragOver
@@ -73,26 +49,12 @@
 
   <Teleport to="body">
     <Transition name="dz">
-      <div
-        v-if="dropzoneOpen"
-        class="dz-mask"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dz-title"
-        @click.self="closeDropzone"
-        @dragover.prevent
-        @drop.prevent
-      >
+      <div v-if="dropzoneOpen" class="dz-mask" role="dialog" aria-modal="true" aria-labelledby="dz-title"
+        @click.self="closeDropzone" @dragover.prevent @drop.prevent>
         <div class="dz-modal">
           <header class="dz-header">
             <h3 id="dz-title">批量导入模组</h3>
-            <button
-              class="dz-close"
-              type="button"
-              :disabled="importing"
-              aria-label="关闭"
-              @click="closeDropzone"
-            >
+            <button class="dz-close" type="button" :disabled="importing" aria-label="关闭" @click="closeDropzone">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2">
                 <line x1="4" y1="4" x2="12" y2="12" />
                 <line x1="12" y1="4" x2="4" y2="12" />
@@ -100,18 +62,12 @@
             </button>
           </header>
 
-          <div
-            class="dz-area"
-            :class="{ over: isDragOver }"
-            @dragenter.prevent="isDragOver = true"
-            @dragover.prevent="onDragOver"
-            @dragleave.prevent="onDragLeave"
-            @drop.prevent="onDrop"
-          >
+          <div class="dz-area" :class="{ over: isDragOver }" @dragenter.prevent="isDragOver = true"
+            @dragover.prevent="onDragOver" @dragleave.prevent="onDragLeave" @drop.prevent="onDrop">
             <svg class="dz-icon" viewBox="0 0 1024 1024" version="1.1">
               <path
-                d="M153.6 902.656a32.256 32.256 0 0 1 0-64h716.8a32.256 32.256 0 0 1 0 64z m390.656-665.6v494.592a32.256 32.256 0 0 1-64 0V237.056L236.032 481.28a31.744 31.744 0 1 1-45.056-45.056l294.912-295.424a36.864 36.864 0 0 1 51.2 0l294.912 294.912a31.744 31.744 0 0 1-45.056 45.056z"
-              ></path>
+                d="M153.6 902.656a32.256 32.256 0 0 1 0-64h716.8a32.256 32.256 0 0 1 0 64z m390.656-665.6v494.592a32.256 32.256 0 0 1-64 0V237.056L236.032 481.28a31.744 31.744 0 1 1-45.056-45.056l294.912-295.424a36.864 36.864 0 0 1 51.2 0l294.912 294.912a31.744 31.744 0 0 1-45.056 45.056z">
+              </path>
             </svg>
             <p class="dz-hint">将模组文件夹或压缩包拖拽至此</p>
             <span class="dz-sub">支持文件夹与 .zip / .7z / .rar</span>
@@ -124,11 +80,7 @@
             <div class="dz-progress__text">{{ progress }}%</div>
           </div>
 
-          <p
-            v-if="message"
-            class="dz-message"
-            :class="{ 'dz-message--error': message.includes('失败') }"
-          >
+          <p v-if="message" class="dz-message" :class="{ 'dz-message--error': message.includes('失败') }">
             {{ message }}
           </p>
 
@@ -140,12 +92,7 @@
                   {{ item.kind === 'folder' ? '文件夹' : '压缩包' }}
                 </span>
               </div>
-              <button
-                type="button"
-                class="dz-remove"
-                :disabled="importing"
-                @click="removeItem(item.path)"
-              >
+              <button type="button" class="dz-remove" :disabled="importing" @click="removeItem(item.path)">
                 移除
               </button>
             </li>
@@ -157,12 +104,8 @@
               <button type="button" class="dz-btn" :disabled="importing" @click="closeDropzone">
                 取消
               </button>
-              <button
-                type="button"
-                class="dz-btn dz-btn--primary"
-                :disabled="!items.length || importing"
-                @click="startImport"
-              >
+              <button type="button" class="dz-btn dz-btn--primary" :disabled="!items.length || importing"
+                @click="startImport">
                 {{ importing ? '导入中...' : '开始导入' }}
               </button>
             </div>
@@ -178,9 +121,10 @@ import { ref } from 'vue'
 import { useModStore } from '@/stores/mod'
 import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
+
 const modStore = useModStore()
 const { importMods, importModsWithProgress } = modStore
-const toast = useToastStore()
 
 const ARCHIVE_EXTS = ['.zip', '.7z', '.rar']
 
@@ -258,6 +202,16 @@ const onDrop = async (e) => {
 
   const paths = getDroppedPaths(e)
   if (paths.length) await addPaths(paths)
+}
+
+// 点击导入
+const handleImport = async () => {
+  const result = await importMods()
+  if (result?.errors?.length) {
+    toast.warning(result.errors[0])
+  } else if (result?.success) {
+    toast.success('模组已导入')
+  }
 }
 
 // 内联拖拽区：保持原来的“拖进来直接导入”行为

@@ -1,54 +1,9 @@
 <template>
   <div class="setting">
-    <!-- 左侧定位栏 -->
-    <aside class="setting__nav glass-inner">
-      <div class="nav-item" :class="{ 'nav-item--active': activeIndex === 0 }" @click="scrollTo(0)">
-        <svg class="nav-icon" viewBox="0 0 24 24">
-          <path d="M4 7h7.5M18.5 7H20" />
-          <path d="M4 12h2.5M11.5 12H20" />
-          <path d="M4 17h7.5M18.5 17H20" />
-          <circle cx="15" cy="7" r="2.2" />
-          <circle cx="9" cy="12" r="2.2" />
-          <circle cx="15" cy="17" r="2.2" />
-        </svg>
-        <span class="nav-item__label">常规</span>
-      </div>
-
-      <div class="nav-item" :class="{ 'nav-item--active': activeIndex === 1 }" @click="scrollTo(1)">
-        <svg class="nav-icon" viewBox="0 0 24 24">
-          <rect x="3" y="4" width="18" height="16" rx="2.5" />
-          <circle cx="8.6" cy="9.6" r="1.6" />
-          <path d="M4.4 17.6l4.6-4.8 3.4 3.4 2.5-2.1 4 4.1" />
-        </svg>
-        <span class="nav-item__label">外观</span>
-      </div>
-
-      <div class="nav-item" :class="{ 'nav-item--active': activeIndex === 2 }" @click="scrollTo(2)">
-        <svg class="nav-icon" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="8.6" />
-          <path d="M12 11.3v5.1" />
-          <circle cx="12" cy="7.9" r="1.1" fill="currentColor" stroke="none" />
-        </svg>
-        <span class="nav-item__label">关于</span>
-      </div>
-    </aside>
-
-    <!-- 右侧内容区 -->
-    <div ref="scrollRef" class="setting__content" @scroll="onScroll">
+    <div class="setting__content">
       <!-- 常规 -->
-      <section :ref="setSection('general')" class="block glass-card">
+      <section class="block glass-card">
         <div class="block__title">常规</div>
-
-        <div class="row">
-          <div class="row__label">
-            <div class="row__name">最小化到托盘</div>
-            <div class="row__desc">点关闭按钮时收进托盘，而不是退出软件</div>
-          </div>
-          <button class="switch" :class="{ 'switch--on': minimizeToTray }" role="switch" :aria-checked="minimizeToTray"
-            @click="toggleMinimizeToTray">
-            <span class="switch__dot"></span>
-          </button>
-        </div>
 
         <div class="row">
           <div class="row__label">
@@ -69,7 +24,7 @@
       </section>
 
       <!-- 外观 -->
-      <section :ref="setSection('appearance')" class="block glass-card">
+      <section class="block glass-card">
         <div class="block__title">外观</div>
 
         <div class="row">
@@ -147,7 +102,7 @@
       </section>
 
       <!-- 关于 -->
-      <section :ref="setSection('about')" class="block glass-card">
+      <section class="block glass-card">
         <div class="block__title">关于</div>
         <div class="about">
           <div class="about__row">
@@ -173,135 +128,18 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import axios from 'axios'
 import { useSettingStore } from '@/stores/setting'
 
 const settingStore = useSettingStore()
-const {
-  theme,
-  background,
-  backgroundOpacity,
-  weather,
-  hasCustom,
-  minimizeToTray,
-  defaultBgUrl,
-  customBgUrl
-} = storeToRefs(settingStore)
-const {
-  setBackground,
-  setBackgroundOpacity,
-  setWeather,
-  uploadBackground,
-  removeBackground,
-  saveSettings
-} = settingStore
-
-const scrollRef = ref(null)
-const appInfo = ref({ name: '', version: '', author: '', description: '' })
-const activeIndex = ref(0)
-
-// 程序滚动期间暂停滚动监听，否则点「关于」时左侧会先闪回中间项
-const syncing = ref(false)
-// 程序滚动时想去的目标项：滚动期间锁住它，避免 observer 把高亮拽回中间
-let targetIndex = -1
-let syncTimer = null
-
-// 和模板里的 setSection 一一对应；scrollTo / observer 都按这个顺序取索引
-const sections = [{ key: 'general' }, { key: 'appearance' }, { key: 'about' }]
-
-// 收集各 section 的 DOM，offsetTop 用来算滚动目标
-const sectionEls = new Map()
-const setSection = (key) => (el) => {
-  if (el) sectionEls.set(key, el)
-}
-
-const scrollTo = (i) => {
-  const el = sectionEls.get(sections[i].key)
-  if (!el) return
-  activeIndex.value = i
-  targetIndex = i
-  syncing.value = true
-  clearTimeout(syncTimer)
-  scrollRef.value?.scrollTo({ top: el.offsetTop - 12, behavior: 'smooth' })
-  // scrollend 不是所有环境都可靠，用定时兜底
-  syncTimer = setTimeout(() => {
-    syncing.value = false
-    targetIndex = -1
-  }, 600)
-}
-
-let observer = null
-
-onMounted(async () => {
-  // 右侧滚动 → 左侧高亮
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (syncing.value) {
-        // 滚动途中 observer 会持续回调，锁住目标项；滚过了才放手
-        if (targetIndex >= 0) activeIndex.value = targetIndex
-        return
-      }
-      const visible = entries
-        .filter((e) => e.isIntersecting)
-        .map((e) => sections.findIndex((s) => s.key === e.target.dataset.section))
-        .filter((i) => i >= 0)
-      if (!visible.length) return
-      activeIndex.value = Math.min(...visible)
-    },
-    {
-      root: scrollRef.value,
-      // 可视区上方 40% 作为判定带，避免「刚露头就高亮」
-      rootMargin: '0px 0px -60% 0px',
-      threshold: 0
-    }
-  )
-  sectionEls.forEach((el, key) => {
-    el.dataset.section = key
-    observer.observe(el)
-  })
-
-  try {
-    const res = await axios.get('/api/app-info')
-    appInfo.value = res.data
-  } catch {
-    // 关于页拿不到就显示 —，不影响其他设置
-  }
-})
-
-onUnmounted(() => {
-  observer?.disconnect()
-  clearTimeout(syncTimer)
-})
-
-// 「关于」内容短，永远进不了上 40% 判定带，滚到底时兜底点亮最后一项
-const onScroll = () => {
-  const el = scrollRef.value
-  if (!el || syncing.value) return
-  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 4) {
-    activeIndex.value = sections.length - 1
-  }
-}
+const { theme, background, backgroundOpacity, appInfo, weather, hasCustom, defaultBgUrl, customBgUrl } = storeToRefs(settingStore)
+const { setBackground, setBackgroundOpacity, setWeather, pickBackground, removeBackground, saveSettings } = settingStore
 
 const setTheme = async (value) => {
-  theme.value = value
+  theme.value = value;
   await saveSettings()
 }
 
-const toggleMinimizeToTray = async () => {
-  minimizeToTray.value = !minimizeToTray.value
-  await saveSettings()
-}
-
-const pickBackground = async () => {
-  const res = await axios.get('/api/dialog/file', { params: { type: 'image' } })
-  const image = res.data.path
-  if (!image) return
-  await uploadBackground(image)
-}
-
-// 真删磁盘文件，删完自动切回默认壁纸（store 里处理）
 const onRemoveBackground = async () => {
   await removeBackground()
 }

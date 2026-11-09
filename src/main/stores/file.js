@@ -68,7 +68,7 @@ export const sanitizeFileName = (raw) => {
     .join('')
 
   let base = cleaned.replace(/[. ]+$/, '').trim()
-  if (!base) base = 'mod-download.bin'
+  if (!base) base = 'mod-file.bin'
   if (base.length > 180) {
     const ext = path.extname(base)
     base = base.slice(0, Math.max(1, 180 - ext.length)) + ext

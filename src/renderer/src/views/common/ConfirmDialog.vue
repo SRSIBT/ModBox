@@ -8,14 +8,7 @@
             <line x1="12" y1="4" x2="4" y2="12" />
           </svg>
           <span>确认操作</span>
-          <svg
-            class="close"
-            @click="cancel"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.2"
-          >
+          <svg class="close" @click="cancel" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2">
             <line x1="4" y1="4" x2="12" y2="12" />
             <line x1="12" y1="4" x2="4" y2="12" />
           </svg>
@@ -26,41 +19,21 @@
           <span v-else-if="type === 'mod'">确定要删除模组 "{{ title }}" 嘛？</span>
           <span v-else-if="type === 'mods'">确定要删除选中的 {{ title }} 个模组嘛？</span>
           <div class="warning">
-            <svg
-              t="1791028643833"
-              class="icon"
-              viewBox="0 0 1024 1024"
-              version="1.1"
-              xmlns="http://www.w3.org/2000/svg"
-              p-id="5806"
-              width="16"
-              height="16"
-            >
+            <svg t="1791028643833" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+              p-id="5806" width="16" height="16">
               <path
                 d="M511.87 33.99c-265.1 0-480 214.9-480 480s214.9 480 480 480 480-214.9 480-480-214.91-480-480-480z m-0.27 757.33c-27.61 0-50-22.39-50-50s22.39-50 50-50 50 22.39 50 50c0 27.62-22.39 50-50 50z m37.67-179.49c0 19.18-16.48 34.73-36.8 34.73-20.33 0-36.8-15.55-36.8-34.73 0 0-22.66-249.86-22.69-333.45-0.01-24.73 26.64-41.73 59.5-41.73 30.66 0 58.29 15.52 58.29 41.01-0.01 84.93-21.5 334.17-21.5 334.17z"
-                fill="#FF9800"
-                p-id="5807"
-              ></path>
+                fill="#FF9800" p-id="5807"></path>
             </svg>
             <span>操作后无法撤销，请谨慎确认</span>
           </div>
         </div>
 
-        <label
-          v-if="checkbox"
-          class="dialog__checkbox"
-          :class="{ 'dialog__checkbox--on': checked }"
-        >
+        <label v-if="checkbox" class="dialog__checkbox" :class="{ 'dialog__checkbox--on': checked }">
           <input v-model="checked" type="checkbox" />
           <span class="dialog__check" aria-hidden="true">
-            <svg
-              viewBox="0 0 12 12"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round">
               <path d="m2.5 6.2 2.2 2.2 4.8-5" />
             </svg>
           </span>
@@ -192,11 +165,6 @@ const confirm = () => emit('confirm', { checked: checked.value })
   font-weight: 600;
 }
 
-.dialog__content span:nth-child(2) {
-  font-size: 10px;
-  color: var(--text-sub);
-}
-
 /* 警告框 —— 亮色 */
 .dialog__content .warning {
   padding: 12px;
@@ -295,7 +263,7 @@ const confirm = () => emit('confirm', { checked: checked.value })
   transform: scale(1.04);
 }
 
-.dialog__checkbox input:focus-visible + .dialog__check {
+.dialog__checkbox input:focus-visible+.dialog__check {
   outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
   outline-offset: 2px;
 }
@@ -338,9 +306,6 @@ const confirm = () => emit('confirm', { checked: checked.value })
 
 .dialog__buttons .btn-confirm:hover {
   background: #e74f4f55;
-}
-
-.btn-confirm:hover {
   opacity: 0.9;
 }
 
