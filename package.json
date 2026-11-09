@@ -1,6 +1,6 @@
 {
   "name": "ModBox",
-  "version": "0.0.3",
+  "version": "1.0.1",
   "description": "ModBox —— 自制模组管理器，轻量、干净。把安装、启停、排序收进一个盒子，让模组管理不再折腾。",
   "main": "./out/main/index.js",
   "author": "SRSBT",
