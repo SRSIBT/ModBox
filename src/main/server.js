@@ -11,6 +11,16 @@ import { BACKGROUNDS_DIR, BUILTIN_BACKGROUNDS_DIR, BUILTIN_COVERS_DIR, DATA_DIR,
 
 const app = express()
 app.use(express.json())
+
+// 打包后页面是 file://，请求 localhost 的接口会被浏览器按跨域处理
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
+
 app.use('/covers', express.static(REPO_DIR))
 app.use('/backgrounds', express.static(BACKGROUNDS_DIR))
 

@@ -16,6 +16,8 @@ extraResources:
     to: .
 win:
   executableName: ModBox
+  target:
+    - zip
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

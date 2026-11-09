@@ -153,12 +153,11 @@ export const setBackground = (image) => {
 
 // 删除背景
 export const removeBackground = () => {
-  const file = () => {
-    if (!fs.existsSync(BACKGROUNDS_DIR)) return null
-    return (
-      fs.readdirSync(BACKGROUNDS_DIR).find((file) => file.toLowerCase().startsWith('custom.')) || null
-    )
+  if (fs.existsSync(BACKGROUNDS_DIR)) {
+    const file =
+      fs.readdirSync(BACKGROUNDS_DIR).find((name) => name.toLowerCase().startsWith('custom.')) ||
+      null
+    if (file) fs.unlinkSync(path.join(BACKGROUNDS_DIR, file))
   }
-  if (file) fs.unlinkSync(path.join(BACKGROUNDS_DIR, file))
   return { hasCustom: false, url: '' }
 }

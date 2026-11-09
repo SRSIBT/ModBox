@@ -44,7 +44,7 @@ export const useSettingStore = defineStore('setting', () => {
       if (col) col.width = s.width
     })
 
-    defaultBgUrl.value = res.data.defaultBgUrl || '/builtin-bg/default.jpg'
+    defaultBgUrl.value = res.data.defaultBgUrl || ''
     customBgUrl.value = res.data.customBgUrl || ''
     hasCustom.value = res.data.hasCustom === true
 
@@ -60,16 +60,15 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   // 保存设置
-  const saveSettings = () =>
-    axios.post('/api/settings', {
-      activeGameId: activeGameId.value,
-      theme: theme.value,
-      viewMode: viewMode.value,
-      background: background.value,
-      backgroundOpacity: backgroundOpacity.value,
-      weather: weather.value,
-      modColumns: modColumns.value
-    })
+  const saveSettings = () => axios.post('/api/settings', {
+    activeGameId: activeGameId.value,
+    theme: theme.value,
+    viewMode: viewMode.value,
+    background: background.value,
+    backgroundOpacity: backgroundOpacity.value,
+    weather: weather.value,
+    modColumns: modColumns.value
+  })
 
   // 切换背景
   const setBackground = async (mode) => {

@@ -3,6 +3,12 @@ import { defineStore } from 'pinia'
 import { useSettingStore } from './setting'
 import { ref, computed, reactive } from 'vue'
 
+// 打包后页面是 file://，Mod 封面也要改成本地服务地址
+const assetUrl = (url) => {
+  if (!url || window.location.protocol !== 'file:' || !url.startsWith('/')) return url
+  return `http://localhost:3000${url}`
+}
+
 export const useModStore = defineStore('mods', () => {
   const modList = ref([]) // 模组列表
   const modFiles = ref([]) // 模组文件树
@@ -70,7 +76,10 @@ export const useModStore = defineStore('mods', () => {
       return
     }
     const res = await axios.get(`/api/mods/${gameId}`)
-    modList.value = res.data.mods || []
+    modList.value = (res.data.mods || []).map((mod) => ({
+      ...mod,
+      cover: assetUrl(mod.cover)
+    }))
 
     // 删除/重新加载后把已不存在的选中项剔掉，避免批量操作栏一直显示旧数量
     const liveIds = new Set(modList.value.map((m) => m.id))

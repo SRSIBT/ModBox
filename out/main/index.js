@@ -232,7 +232,7 @@ const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
-          match: "archive",
+          match: "^archive",
           mode: "folder",
           into: "{game_root}",
           note: "legacy 格式 Mod 的 archive 目录，与游戏自带 archive 合并"
@@ -250,19 +250,19 @@ const BUILTIN_GAMES = {
           note: "ArchiveXL 的 .xl 文件与 archive 同目录"
         },
         {
-          match: "bin",
+          match: "^bin",
           mode: "folder",
           into: "{game_root}",
           note: "CET / RED4ext 等框架的 bin 目录并入根"
         },
         {
-          match: "r6",
+          match: "^r6",
           mode: "folder",
           into: "{game_root}",
           note: "redscript 脚本与 tweaks 配置并入 r6"
         },
         {
-          match: "mods",
+          match: "^mods",
           mode: "folder",
           into: "{game_root}",
           note: "REDmod 格式的 mods 目录（含 info.json 的子文件夹）"
@@ -319,25 +319,25 @@ const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
-          match: "dinput8.dll",
+          match: "^dinput8.dll",
           mode: "files",
           into: "{game_root}/Bin/Win64MasterMasterSteamPGO",
-          note: "KCSE 脚本扩展器本体，放游戏 exe 同目录"
+          note: "KCSE 脚本扩展器本体，只取顶层，放游戏 exe 同目录"
         },
         {
-          match: "dinput8.pdb",
+          match: "^dinput8.pdb",
           mode: "files",
           into: "{game_root}/Bin/Win64MasterMasterSteamPGO",
-          note: "KCSE 调试符号"
+          note: "KCSE 调试符号，只取顶层"
         },
         {
-          match: "KCSE/Plugins/*.dll",
+          match: "**/KCSE/Plugins/*.dll",
           mode: "files",
           into: "{game_root}/KCSE/Plugins",
-          note: "KCSE 插件 dll，统一合并到根 KCSE/Plugins/"
+          note: "KCSE 插件 dll，从任意层级的 KCSE/Plugins/ 抽出，合并到根 KCSE/Plugins/"
         },
         {
-          match: "KCSE/addresslib/*.bin",
+          match: "**/KCSE/addresslib/*.bin",
           mode: "files",
           into: "{game_root}/KCSE/addresslib",
           note: "KCSE 地址库 bin，合并到根 KCSE/addresslib/"
@@ -432,25 +432,25 @@ const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
-          match: "vfs.asi",
+          match: "^vfs.asi",
           mode: "files",
           into: "{game_root}",
           note: "LML 的 vfs.asi 必须放 RDR2.exe 同目录"
         },
         {
-          match: "lml.ini",
+          match: "^lml.ini",
           mode: "files",
           into: "{game_root}",
           note: "LML 配置放根目录"
         },
         {
-          match: "ModManager.Core.dll",
+          match: "^ModManager.Core.dll",
           mode: "files",
           into: "{game_root}",
           note: "LML 核心 dll"
         },
         {
-          match: "ModManager.NativeInterop.dll",
+          match: "^ModManager.NativeInterop.dll",
           mode: "files",
           into: "{game_root}",
           note: "LML 互操作 dll"
@@ -486,12 +486,6 @@ const BUILTIN_GAMES = {
           note: "伴侣模组数据文件夹，放根目录（不要进 lml/）"
         },
         {
-          match: "ModManager",
-          mode: "folder",
-          into: "{game_root}",
-          note: "RDR 模组管理器UI，丢进根目录"
-        },
-        {
           match: "scripts",
           mode: "folder",
           into: "{game_root}",
@@ -510,13 +504,13 @@ const BUILTIN_GAMES = {
           note: "模组配置 ini，跟 .asi 同目录放根目录"
         },
         {
-          match: "dinput8.dll",
+          match: "^dinput8.dll",
           mode: "files",
           into: "{game_root}",
           note: "ASI Loader 代理 dll，放根目录"
         },
         {
-          match: "ScriptHookRDR2.dll",
+          match: "^ScriptHookRDR2.dll",
           mode: "files",
           into: "{game_root}",
           note: "ScriptHook 前置，放根目录"
@@ -575,13 +569,13 @@ const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
-          match: "natives",
+          match: "^natives",
           mode: "folder",
           into: "{game_root}",
           note: "纹理/模型替换类 Mod 的 natives/ 目录并入根（合并而非替换）"
         },
         {
-          match: "reframework",
+          match: "^reframework",
           mode: "folder",
           into: "{game_root}",
           note: "脚本/插件类 Mod 的 reframework 目录并入根"
@@ -632,16 +626,28 @@ const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
+          match: "^dinput8.dll",
+          mode: "files",
+          into: "{game_root}",
+          note: "ModEngine 代理 dll，放 sekiro.exe 同目录"
+        },
+        {
+          match: "^modengine.ini",
+          mode: "files",
+          into: "{game_root}",
+          note: "ModEngine 配置文件，放 sekiro.exe 同目录"
+        },
+        {
           match: "mods",
           mode: "folder",
           into: "{game_root}",
-          note: "包内自带 mods/ 目录时并入根（需与 modengine.ini 的 override 路径一致）"
+          note: "包内自带 mods/ 目录时直接并入根"
         },
         {
           match: "parts",
           mode: "folder",
           into: "{game_root}/mods",
-          note: "皮肤类 Mod 的 parts/ 直接放 mods/ 下，不要再套一层"
+          note: "皮肤/模型类 Mod 的 parts/ 放 mods/ 下"
         },
         {
           match: "chr",
@@ -650,17 +656,59 @@ const BUILTIN_GAMES = {
           note: "角色/NPC 类 Mod 的 chr/ 放 mods/ 下"
         },
         {
-          match: "*.dcx",
-          mode: "files",
+          match: "sfx",
+          mode: "folder",
           into: "{game_root}/mods",
-          note: "散装 .dcx 文件放 mods/"
+          note: "特效类 Mod 的 sfx/ 放 mods/ 下（如“危”字特效替换）"
+        },
+        {
+          match: "param",
+          mode: "folder",
+          into: "{game_root}/mods",
+          note: "数值类 Mod 的 param/ 放 mods/ 下"
+        },
+        {
+          match: "event",
+          mode: "folder",
+          into: "{game_root}/mods",
+          note: "事件类 Mod 的 event/ 放 mods/ 下"
+        },
+        {
+          match: "map",
+          mode: "folder",
+          into: "{game_root}/mods",
+          note: "地图类 Mod 的 map/ 放 mods/ 下"
+        },
+        {
+          match: "menu",
+          mode: "folder",
+          into: "{game_root}/mods",
+          note: "菜单类 Mod 的 menu/ 放 mods/ 下"
+        },
+        {
+          match: "msg",
+          mode: "folder",
+          into: "{game_root}/mods",
+          note: "文本类 Mod 的 msg/ 放 mods/ 下"
+        },
+        {
+          match: "script",
+          mode: "folder",
+          into: "{game_root}/mods",
+          note: "脚本类 Mod 的 script/ 放 mods/ 下"
+        },
+        {
+          match: "sound",
+          mode: "folder",
+          into: "{game_root}/mods",
+          note: "音效类 Mod 的 sound/ 放 mods/ 下"
         },
         {
           match: "*",
           mode: "folder",
           lift: 1,
           into: "{game_root}/mods",
-          note: "兜底：顶层文件夹整体放入 mods/"
+          note: "兜底：顶层文件夹进 mods/（若包有外层文件夹）"
         }
       ],
       cleanup: {
@@ -676,6 +724,11 @@ const BUILTIN_GAMES = {
             op: "unlink",
             files: ["dinput8.dll"],
             note: "移除 ModEngine 的代理 dll"
+          },
+          {
+            op: "unlink",
+            files: ["modengine.ini"],
+            note: "移除 ModEngine 的配置文件"
           }
         ]
       }
@@ -691,16 +744,34 @@ const BUILTIN_GAMES = {
     installRules: {
       placements: [
         {
-          match: "~Mods",
+          match: "^ue4ss",
+          mode: "folder",
+          into: "{game_root}/SB/Binaries/Win64",
+          note: "UE4SS 加载器目录，只取顶层，放 SB/Binaries/Win64/"
+        },
+        {
+          match: "^dwmapi.dll",
+          mode: "files",
+          into: "{game_root}/SB/Binaries/Win64",
+          note: "UE4SS 代理 dll，只取顶层，放 SB/Binaries/Win64/"
+        },
+        {
+          match: "^Binaries",
+          mode: "folder",
+          into: "{game_root}/SB",
+          note: "CNS 本体 Binaries 目录，并入 SB/"
+        },
+        {
+          match: "^Content",
+          mode: "folder",
+          into: "{game_root}/SB",
+          note: "CNS 本体 Content 目录，并入 SB/"
+        },
+        {
+          match: "^~Mods",
           mode: "folder",
           into: "{game_root}/SB/Content/Paks",
           note: "包内自带 ~Mods/ 目录时并入 Paks/"
-        },
-        {
-          match: "~mods",
-          mode: "folder",
-          into: "{game_root}/SB/Content/Paks",
-          note: "同上，大小写变体"
         },
         {
           match: "*.pak",
@@ -736,11 +807,6 @@ const BUILTIN_GAMES = {
             dir: "SB/Content/Paks/~Mods",
             keepFiles: [],
             note: "清空 ~Mods/ 下全部内容"
-          },
-          {
-            op: "purge",
-            dir: "SB/Content/Paks/~mods",
-            note: "清空大小写变体目录（若存在）"
           }
         ]
       }
@@ -945,11 +1011,10 @@ const setBackground = (image) => {
   return getBackground();
 };
 const removeBackground = () => {
-  const file = () => {
-    if (!fs.existsSync(BACKGROUNDS_DIR)) return null;
-    return fs.readdirSync(BACKGROUNDS_DIR).find((file2) => file2.toLowerCase().startsWith("custom.")) || null;
-  };
-  if (file) fs.unlinkSync(path.join(BACKGROUNDS_DIR, file));
+  if (fs.existsSync(BACKGROUNDS_DIR)) {
+    const file = fs.readdirSync(BACKGROUNDS_DIR).find((name) => name.toLowerCase().startsWith("custom.")) || null;
+    if (file) fs.unlinkSync(path.join(BACKGROUNDS_DIR, file));
+  }
   return { hasCustom: false, url: "" };
 };
 const getGames = () => {
@@ -1118,8 +1183,7 @@ const matchPath = (pattern, relPath) => {
   const glob = String(pattern || "").replace(/\\/g, "/").replace(/^\.?\//, "");
   if (!glob) return false;
   if (glob.startsWith("^")) {
-    const exact = glob.slice(1);
-    return globToRegExp(exact).test(relPath);
+    return globToRegExp(glob.slice(1)).test(relPath);
   }
   if (glob.includes("/")) return globToRegExp(glob).test(relPath);
   const name = relPath.split("/").pop();
@@ -2047,12 +2111,15 @@ router$1.post("/notices", (req, res) => {
   res.json({ success: true });
 });
 const router = express.Router();
+const publicBgUrl = (url) => electron.app.isPackaged && url.startsWith("/") ? `http://localhost:3000${url}` : url;
 router.get("/settings", (req, res) => {
   const bg = getBackground();
+  const customBgUrl = publicBgUrl(bg.url);
   res.json({
     ...readSettings(),
-    defaultBgUrl: "/builtin-bg/default.jpg",
-    customBgUrl: bg.url,
+    // 打包后页面是 file://，统一走本地 HTTP 服务；CSP 已放行 3000。
+    defaultBgUrl: electron.app.isPackaged ? "http://localhost:3000/builtin-bg/default.jpg" : "/builtin-bg/default.jpg",
+    customBgUrl,
     hasCustom: bg.hasCustom
   });
 });
@@ -2062,7 +2129,7 @@ router.post("/settings", (req, res) => {
 router.post("/background/custom", (req, res) => {
   try {
     const bg = setBackground(req.body?.image);
-    res.json({ success: true, customBgUrl: bg.url, hasCustom: bg.hasCustom });
+    res.json({ success: true, customBgUrl: publicBgUrl(bg.url), hasCustom: bg.hasCustom });
   } catch (e) {
     res.status(400).json({ success: false, message: e.message });
   }
@@ -2090,6 +2157,13 @@ router.get("/app-info", (req, res) => {
 });
 const app = express();
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 app.use("/covers", express.static(REPO_DIR));
 app.use("/backgrounds", express.static(BACKGROUNDS_DIR));
 app.use("/builtin-covers", express.static(BUILTIN_COVERS_DIR));

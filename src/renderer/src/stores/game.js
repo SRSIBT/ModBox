@@ -3,6 +3,12 @@ import { ref, computed } from 'vue'
 import { useSettingStore } from './setting'
 import axios from 'axios'
 
+// 打包后页面是 file://，封面不能再用 /builtin-covers 这种根路径
+const assetUrl = (url) => {
+  if (!url || window.location.protocol !== 'file:' || !url.startsWith('/')) return url
+  return `http://localhost:3000${url}`
+}
+
 export const useGameStore = defineStore('games', () => {
   const games = ref([]) // 游戏列表
   const currentId = ref('') // 当前选中游戏ID
@@ -23,7 +29,7 @@ export const useGameStore = defineStore('games', () => {
     const res = await axios.get('/api/games')
     games.value = res.data.games.map((g) => ({
       ...g,
-      cover: g.cover
+      cover: assetUrl(g.cover)
     }))
   }
 

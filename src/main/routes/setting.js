@@ -1,3 +1,4 @@
+import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import express from 'express'
@@ -6,13 +7,21 @@ import { readSettings, saveSettings, getBackground, setBackground, removeBackgro
 
 const router = express.Router()
 
+const publicBgUrl = (url) =>
+  app.isPackaged && url.startsWith('/') ? `http://localhost:3000${url}` : url
+
 // 获取设置
 router.get('/settings', (req, res) => {
   const bg = getBackground()
+  const customBgUrl = publicBgUrl(bg.url)
+
   res.json({
     ...readSettings(),
-    defaultBgUrl: '/builtin-bg/default.jpg',
-    customBgUrl: bg.url,
+    // 打包后页面是 file://，统一走本地 HTTP 服务；CSP 已放行 3000。
+    defaultBgUrl: app.isPackaged
+      ? 'http://localhost:3000/builtin-bg/default.jpg'
+      : '/builtin-bg/default.jpg',
+    customBgUrl,
     hasCustom: bg.hasCustom
   })
 })
@@ -26,7 +35,7 @@ router.post('/settings', (req, res) => {
 router.post('/background/custom', (req, res) => {
   try {
     const bg = setBackground(req.body?.image)
-    res.json({ success: true, customBgUrl: bg.url, hasCustom: bg.hasCustom })
+    res.json({ success: true, customBgUrl: publicBgUrl(bg.url), hasCustom: bg.hasCustom })
   } catch (e) {
     res.status(400).json({ success: false, message: e.message })
   }
